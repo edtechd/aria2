@@ -48,6 +48,7 @@
 #include <algorithm>
 #include <cstring>
 #include <sstream>
+#include <fstream>
 #include <iterator>
 
 #include "DownloadEngine.h"
@@ -200,6 +201,52 @@ void printProgress(ColorizedStream& o, const std::shared_ptr<RequestGroup>& rg,
   }
   o << "]";
 }
+
+void printProgressOut(ColorizedStream& o, const std::shared_ptr<RequestGroup>& rg,
+                   const DownloadEngine* e, const SizeFormatter& sizeFormatter)
+{
+  TransferStat stat = rg->calculateStat();
+  int eta = 0;
+  if (rg->getTotalLength() > 0 && stat.downloadSpeed > 0) {
+    eta =
+        (rg->getTotalLength() - rg->getCompletedLength()) / stat.downloadSpeed;
+  }
+  o << "{ \"gid\" : \"" << GroupId::toAbbrevHex(rg->getGID()) << "\", ";
+  //printSizeProgress(o, rg, stat, sizeFormatter);
+  o << " \"CN\" : \"" << rg->getNumConnection() << "\", ";
+  o << " \"totalLength\" : \"" << rg->getTotalLength() << "\", ";
+  o << " \"completedLength\" : \"" << rg->getCompletedLength() << "\", ";
+  o << " \"numFiles\" : \"" << rg->getDownloadContext()->getFileEntries().size() << "\", ";
+  
+#ifdef ENABLE_BITTORRENT
+  auto btObj = e->getBtRegistry()->get(rg->getGID());
+  if (btObj) {
+    const PeerSet& peers = btObj->peerStorage->getUsedPeers();
+    o << " \"SD\": \"" << countSeeder(peers.begin(), peers.end()) << "\", ";
+	o << " \"infoHash\" : \"" << util::toHex(bittorrent::getTorrentAttrs(btObj->downloadContext)->infoHash) << "\", \n";
+	o << " \"name\" : \"" << bittorrent::getTorrentAttrs(btObj->downloadContext)->name << "\", ";
+	if(!bittorrent::getTorrentAttrs(btObj->downloadContext)->metadata.empty())
+		o << " \"hasMetadata\" : \"true\", ";
+	}
+#endif // ENABLE_BITTORRENT
+
+  if (!rg->downloadFinished()) {
+    o << " \"downloadSpeed\": \"" << stat.downloadSpeed << "\" ";
+  } else {
+	  if(!rg->inMemoryDownload())	{
+			o << " \"finished\": true ";
+	  }
+  }
+  /*if (stat.sessionUploadLength > 0) {
+    o << " UL:" << colors::cyan << sizeFormatter(stat.uploadSpeed) << "B"
+      << colors::clear;
+    o << "(" << sizeFormatter(stat.allTimeUploadLength) << "B)";
+  }*/
+  if (eta > 0) {
+    //o << " \"ETA\" : \"" << eta << "\"";
+  }
+  o << " },";
+}
 } // namespace
 
 namespace {
@@ -231,6 +278,35 @@ public:
     global::cout()->write(str.c_str());
   }
 };
+
+class PrintSummaryOut {
+private:
+  size_t cols_;
+  std::ofstream& output_;
+  const DownloadEngine* e_;
+  const SizeFormatter& sizeFormatter_;  
+
+public:
+  PrintSummaryOut(size_t cols, std::ofstream& output, const DownloadEngine* e,
+               const SizeFormatter& sizeFormatter)
+      : cols_(cols), output_(output), e_(e), sizeFormatter_(sizeFormatter)
+  {
+  }
+
+  void operator()(const RequestGroupList::value_type& rg)
+  {
+    //const char SEP_CHAR = '-';
+    ColorizedStream o;
+    printProgressOut(o, rg, e_, sizeFormatter_);
+    /*const std::vector<std::shared_ptr<FileEntry>>& fileEntries =
+        rg->getDownloadContext()->getFileEntries(); */
+    //o << "\n" << std::setfill(SEP_CHAR) << std::setw(cols_) << SEP_CHAR << "\n";
+	o << "\n  ";
+    auto str = o.str(false);
+	output_.write(str.c_str(),str.size());
+    //global::cout()->write(str.c_str());
+  }
+};
 } // namespace
 
 namespace {
@@ -259,9 +335,50 @@ void printProgressSummary(const RequestGroupList& groups, size_t cols,
   }
   o << " *** \n" << std::setfill(SEP_CHAR) << std::setw(cols) << SEP_CHAR
     << "\n";
+  
   global::cout()->write(o.str().c_str());
   std::for_each(groups.begin(), groups.end(),
                 PrintSummary(cols, e, sizeFormatter));
+}
+
+void printOutProgressSummary(const RequestGroupList& groups, size_t cols,
+                          const DownloadEngine* e,
+                          const SizeFormatter& sizeFormatter)
+{
+  //const char SEP_CHAR = '=';
+  time_t now;
+  time(&now);
+  std::stringstream o;
+  //o << " *** Download Progress Summary wrote to file";
+  o << " [ ";
+  {
+    time_t now;
+    struct tm* staticNowtmPtr;
+    char buf[26];
+    if (time(&now) != (time_t)-1 &&
+        (staticNowtmPtr = localtime(&now)) != nullptr &&
+        asctime_r(staticNowtmPtr, buf) != nullptr) {
+      char* lfptr = strchr(buf, '\n');
+      if (lfptr) {
+        *lfptr = '\0';
+      }
+      //o << " as of " << buf;
+    }
+  }
+  //o << " *** \n" << std::setfill(SEP_CHAR) << std::setw(cols) << SEP_CHAR
+//  o << " {} ]\n";
+	
+  std::ofstream fs;
+  fs.open("/home/logs/t.log");
+  auto str = o.str();
+  fs.write(str.c_str(), str.size());
+  
+  
+  global::cout()->write(o.str().c_str());
+  std::for_each(groups.begin(), groups.end(),
+  PrintSummaryOut(cols, fs, e, sizeFormatter));
+  fs.write(" {} ]\n", 6);
+  fs.close();
 }
 } // namespace
 
@@ -277,6 +394,7 @@ ConsoleStatCalc::ConsoleStatCalc(std::chrono::seconds summaryInterval,
 #endif // !__MINGW32__
       colorOutput_(colorOutput)
 {
+  summaryPInterval_ = std::chrono::seconds(1);
   if (humanReadable) {
     sizeFormatter_ = make_unique<AbbrevSizeFormatter>();
   }
@@ -328,6 +446,17 @@ void ConsoleStatCalc::calculateStat(const DownloadEngine* e)
       global::cout()->write("\n");
       global::cout()->flush();
     }
+	
+    if ((summaryPInterval_ > 0_s) &&
+        lastSummaryPrintout_.difference(global::wallclock()) +
+                A2_DELTA_MILLIS >=
+            summaryPInterval_) {
+      lastSummaryPrintout_ = global::wallclock();
+      printOutProgressSummary(e->getRequestGroupMan()->getRequestGroups(), cols, e,
+                           sizeFormatter);
+      global::cout()->write("Summary wrote\n");
+      global::cout()->flush();
+    }	
   }
   if (!readoutVisibility_) {
     return;

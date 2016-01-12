@@ -60,8 +60,10 @@ private:
   Timer cp_;
 
   Timer lastSummaryNotified_;
+  Timer lastSummaryPrintout_;  
 
   std::chrono::seconds summaryInterval_;
+  std::chrono::seconds summaryPInterval_ ;
 
   std::unique_ptr<SizeFormatter> sizeFormatter_;
   bool readoutVisibility_;
