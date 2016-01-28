@@ -231,7 +231,7 @@ void printProgressOut(ColorizedStream& o, const std::shared_ptr<RequestGroup>& r
 	o << " \"infoHash\" : \"" << util::toHex(bittorrent::getTorrentAttrs(btObj->downloadContext)->infoHash) << "\", \n";
 	o << " \"name\" : \"" << torrentName << "\" ";
 	if(!bittorrent::getTorrentAttrs(btObj->downloadContext)->metadata.empty())
-		o << " \", hasMetadata\" : \"true\" ";
+		o << ", \"hasMetadata\" : \"true\" ";
 	}
 #endif // ENABLE_BITTORRENT
 
