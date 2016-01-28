@@ -216,25 +216,30 @@ void printProgressOut(ColorizedStream& o, const std::shared_ptr<RequestGroup>& r
   o << " \"CN\" : \"" << rg->getNumConnection() << "\", ";
   o << " \"totalLength\" : \"" << rg->getTotalLength() << "\", ";
   o << " \"completedLength\" : \"" << rg->getCompletedLength() << "\", ";
-  o << " \"numFiles\" : \"" << rg->getDownloadContext()->getFileEntries().size() << "\", ";
+  o << " \"numFiles\" : \"" << rg->getDownloadContext()->getFileEntries().size() << "\" ";
   
 #ifdef ENABLE_BITTORRENT
   auto btObj = e->getBtRegistry()->get(rg->getGID());
   if (btObj) {
     const PeerSet& peers = btObj->peerStorage->getUsedPeers();
-    o << " \"SD\": \"" << countSeeder(peers.begin(), peers.end()) << "\", ";
+	std::string torrentName = bittorrent::getTorrentAttrs(btObj->downloadContext)->name;
+	std::replace( torrentName.begin(), torrentName.end(), '\n', '_');
+	std::replace( torrentName.begin(), torrentName.end(), '\t', '_');
+	std::replace( torrentName.begin(), torrentName.end(), '"', '_');
+	
+    o << ", \"SD\": \"" << countSeeder(peers.begin(), peers.end()) << "\", ";
 	o << " \"infoHash\" : \"" << util::toHex(bittorrent::getTorrentAttrs(btObj->downloadContext)->infoHash) << "\", \n";
-	o << " \"name\" : \"" << bittorrent::getTorrentAttrs(btObj->downloadContext)->name << "\", ";
+	o << " \"name\" : \"" << torrentName << "\", ";
 	if(!bittorrent::getTorrentAttrs(btObj->downloadContext)->metadata.empty())
-		o << " \"hasMetadata\" : \"true\", ";
+		o << " \"hasMetadata\" : \"true\" ";
 	}
 #endif // ENABLE_BITTORRENT
 
   if (!rg->downloadFinished()) {
-    o << " \"downloadSpeed\": \"" << stat.downloadSpeed << "\" ";
+    o << " \", downloadSpeed\": \"" << stat.downloadSpeed << "\" ";
   } else {
 	  if(!rg->inMemoryDownload())	{
-			o << " \"finished\": true ";
+			o << " \", finished\": true ";
 	  }
   }
   /*if (stat.sessionUploadLength > 0) {
