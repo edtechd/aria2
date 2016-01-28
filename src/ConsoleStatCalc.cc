@@ -236,10 +236,10 @@ void printProgressOut(ColorizedStream& o, const std::shared_ptr<RequestGroup>& r
 #endif // ENABLE_BITTORRENT
 
   if (!rg->downloadFinished()) {
-    o << " \", downloadSpeed\": \"" << stat.downloadSpeed << "\" ";
+    o << " , \"downloadSpeed\": \"" << stat.downloadSpeed << "\" ";
   } else {
 	  if(!rg->inMemoryDownload())	{
-			o << " \", finished\": true ";
+			o << ", \"finished\": true ";
 	  }
   }
   /*if (stat.sessionUploadLength > 0) {
