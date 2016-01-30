@@ -47,6 +47,7 @@
 #include <cstring>
 #include <cassert>
 #include <sstream>
+#include <array>
 
 #include "message.h"
 #include "DlRetryEx.h"
@@ -104,14 +105,13 @@ std::string errorMsg(int errNum)
 #ifndef __MINGW32__
   return util::safeStrerror(errNum);
 #else
-  static char buf[256];
-  if (FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-                    nullptr, errNum,
-                    MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US), (LPTSTR)&buf,
-                    sizeof(buf), nullptr) == 0) {
+  auto msg = util::formatLastError(errNum);
+  if (msg.empty()) {
+    char buf[256];
     snprintf(buf, sizeof(buf), EX_SOCKET_UNKNOWN_ERROR, errNum, errNum);
+    return buf;
   }
-  return buf;
+  return msg;
 #endif // __MINGW32__
 }
 } // namespace
@@ -1323,6 +1323,15 @@ void SocketCore::setSocketRecvBufferSize(int size)
 }
 
 int SocketCore::getSocketRecvBufferSize() { return socketRecvBufferSize_; }
+
+size_t SocketCore::getRecvBufferedLength() const
+{
+  if (!tlsSession_) {
+    return 0;
+  }
+
+  return tlsSession_->getRecvBufferedLength();
+}
 
 std::vector<SockAddr> SocketCore::getInterfaceAddress(const std::string& iface,
                                                       int family, int aiFlags)

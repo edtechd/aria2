@@ -124,6 +124,9 @@ bool DHTEntryPointNameResolveCommand::execute()
     {
       NameResolver res;
       res.setSocktype(SOCK_DGRAM);
+      if (e_->getOption()->getAsBool(PREF_DISABLE_IPV6)) {
+        res.setFamily(AF_INET);
+      }
       while (!entryPoints_.empty()) {
         std::string hostname = entryPoints_.front().first;
         try {
@@ -170,30 +173,29 @@ int DHTEntryPointNameResolveCommand::resolveHostname(
 {
   if (!asyncNameResolverMan_->started()) {
     asyncNameResolverMan_->startAsync(hostname, e_, this);
-    return 0;
   }
-  else {
-    switch (asyncNameResolverMan_->getStatus()) {
-    case -1:
+
+  switch (asyncNameResolverMan_->getStatus()) {
+  case -1:
+    A2_LOG_INFO(fmt(MSG_NAME_RESOLUTION_FAILED, getCuid(), hostname.c_str(),
+                    asyncNameResolverMan_->getLastError().c_str()));
+    return -1;
+  case 0:
+    return 0;
+  case 1:
+    asyncNameResolverMan_->getResolvedAddress(res);
+    if (res.empty()) {
       A2_LOG_INFO(fmt(MSG_NAME_RESOLUTION_FAILED, getCuid(), hostname.c_str(),
-                      asyncNameResolverMan_->getLastError().c_str()));
+                      "No address returned"));
       return -1;
-    case 0:
-      return 0;
-    case 1:
-      asyncNameResolverMan_->getResolvedAddress(res);
-      if (res.empty()) {
-        A2_LOG_INFO(fmt(MSG_NAME_RESOLUTION_FAILED, getCuid(), hostname.c_str(),
-                        "No address returned"));
-        return -1;
-      }
-      else {
-        A2_LOG_INFO(fmt(MSG_NAME_RESOLUTION_COMPLETE, getCuid(),
-                        hostname.c_str(), res.front().c_str()));
-        return 1;
-      }
+    }
+    else {
+      A2_LOG_INFO(fmt(MSG_NAME_RESOLUTION_COMPLETE, getCuid(), hostname.c_str(),
+                      res.front().c_str()));
+      return 1;
     }
   }
+
   // Unreachable
   return 0;
 }

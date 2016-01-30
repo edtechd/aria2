@@ -93,15 +93,13 @@ namespace {
 std::string fileStrerror(int errNum)
 {
 #ifdef __MINGW32__
-  static char buf[256];
-  if (FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-                    0, errNum,
-                    // Default language
-                    MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US), (LPTSTR)&buf,
-                    sizeof(buf), 0) == 0) {
+  auto msg = util::formatLastError(errNum);
+  if (msg.empty()) {
+    char buf[256];
     snprintf(buf, sizeof(buf), "File I/O error %x", errNum);
+    return buf;
   }
-  return buf;
+  return msg;
 #else  // !__MINGW32__
   return util::safeStrerror(errNum);
 #endif // !__MINGW32__
@@ -496,6 +494,15 @@ void AbstractDiskWriter::allocate(int64_t offset, int64_t length, bool sparse)
 #ifdef HAVE_SOME_FALLOCATE
 #ifdef __MINGW32__
   truncate(offset + length);
+  if (!SetFileValidData(fd_, offset + length)) {
+    auto errNum = fileError();
+    A2_LOG_WARN(fmt(
+        "File allocation (SetFileValidData) failed (cause: %s). File will be "
+        "allocated by filling zero, which blocks whole aria2 execution. Run "
+        "aria2 as an administrator or use a different file allocation method "
+        "(see --file-allocation).",
+        fileStrerror(errNum).c_str()));
+  }
 #elif defined(__APPLE__) && defined(__MACH__)
   auto toalloc = offset + length - size();
   while (toalloc > 0) {
