@@ -221,6 +221,7 @@ int openFileWithFlags(const std::string& filename, int flags,
                                    util::safeStrerror(errNum).c_str()),
                        errCode);
   }
+  util::make_fd_cloexec(fd);
 #if defined(__APPLE__) && defined(__MACH__)
   // This may reduce memory consumption on Mac OS X.
   fcntl(fd, F_NOCACHE, 1);
@@ -372,6 +373,14 @@ void AbstractDiskWriter::ensureMmapWrite(size_t len, int64_t offset)
         return;
       }
 
+      if (static_cast<uint64_t>(std::numeric_limits<size_t>::max()) <
+          static_cast<uint64_t>(filesize)) {
+        // filesize could overflow in 32bit OS with 64bit off_t type
+        // the filesize will be truncated if provided as a 32bit size_t
+        enableMmap_ = false;
+        return;
+      }
+
       int errNum = 0;
       if (static_cast<int64_t>(len + offset) <= filesize) {
 #ifdef __MINGW32__
@@ -390,10 +399,14 @@ void AbstractDiskWriter::ensureMmapWrite(size_t len, int64_t offset)
           errNum = GetLastError();
         }
 #else  // !__MINGW32__
-        mapaddr_ = reinterpret_cast<unsigned char*>(mmap(
-            nullptr, filesize, PROT_READ | PROT_WRITE, MAP_SHARED, fd_, 0));
-        if (!mapaddr_) {
+        auto pa =
+            mmap(nullptr, filesize, PROT_READ | PROT_WRITE, MAP_SHARED, fd_, 0);
+
+        if (pa == MAP_FAILED) {
           errNum = errno;
+        }
+        else {
+          mapaddr_ = reinterpret_cast<unsigned char*>(pa);
         }
 #endif // !__MINGW32__
         if (mapaddr_) {

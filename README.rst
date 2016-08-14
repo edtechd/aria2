@@ -1,7 +1,5 @@
 aria2 - The ultra fast download utility
 =======================================
-:Author:    Tatsuhiro Tsujikawa
-:Email:     tatsuhiro.t_at_gmail_dot_com
 
 Disclaimer
 ----------
@@ -98,11 +96,11 @@ How to get source code
 ----------------------
 
 We maintain the source code at Github:
-https://github.com/tatsuhiro-t/aria2
+https://github.com/aria2/aria2
 
 To get the latest source code, run following command::
 
-    $ git clone https://github.com/tatsuhiro-t/aria2.git
+    $ git clone https://github.com/aria2/aria2.git
 
 This will create aria2 directory in your current directory and source
 files are stored there.
@@ -183,7 +181,7 @@ script respectively.
 
 In order to enable async DNS support, you need c-ares.
 
-* c-ares: http://daniel.haxx.se/projects/c-ares/
+* c-ares: http://c-ares.haxx.se/
 
 How to build
 ------------
@@ -241,7 +239,7 @@ necessary to build the program::
 
     $ autoreconf -i
 
-Also you need `Sphinx <http://sphinx.pocoo.org/>`_ to build man page.
+Also you need `Sphinx <http://sphinx-doc.org/>`_ to build man page.
 
 If you are building aria2 for Mac OS X, take a look at
 the make-release-os.mk GNU Make makefile.
@@ -307,7 +305,7 @@ Cross-compiling Windows binary
 ------------------------------
 
 In this section, we describe how to build a Windows binary using a
-mingw-w64 (http://mingw-w64.sourceforge.net/) cross-compiler on Debian
+mingw-w64 (http://mingw-w64.org/doku.php) cross-compiler on Debian
 Linux. The MinGW (http://www.mingw.org/) may not be able to build
 aria2.
 
@@ -361,7 +359,7 @@ Cross-compiling Android binary
 In this section, we describe how to build Android binary using Android
 NDK cross-compiler on Debian Linux.
 
-At the time of this writing, android-ndk-r9 should compile aria2
+At the time of this writing, android-ndk-r12b should compile aria2
 without errors.
 
 ``android-config`` script is a configure script wrapper for Android
@@ -385,20 +383,17 @@ by ourselves.
 environment variable which must fulfill the following conditions:
 
 * Android NDK toolchain is installed under
-  ``$ANDROID_HOME/toolchain``.  Refer to "4/ Invoking the compiler
-  (the easy way):" section in Android NDK
-  ``docs/STANDALONE-TOOLCHAIN.html`` to install custom toolchain.
+  ``$ANDROID_HOME/toolchain``.  Refer to `Standalone Toolchain
+  <https://developer.android.com/ndk/guides/standalone_toolchain.html>`_
+  for more details, but it is a bit out of date.
 
-  For example, to install toolchain under ``$ANDROID_HOME/toolchain``,
-  do this::
+  To install toolchain under ``$ANDROID_HOME/toolchain``, do this:
 
-      $NDK/build/tools/make-standalone-toolchain.sh \
-        --install-dir=$ANDROID_HOME/toolchain \
-        --toolchain=arm-linux-androideabi-4.9 \
-        --platform=android-16
+  .. code-block:: text
 
-  You may need to add ``--system=linux-x86_64`` to the above
-  command-line for x86_64 Linux host.
+     $NDK/build/tools/make_standalone_toolchain.py \
+        --arch arm --api 16 --stl=gnustl \
+        --install-dir $ANDROID_HOME/toolchain
 
 * The dependent libraries must be installed under
   ``$ANDROID_HOME/usr/local``.
@@ -412,14 +407,13 @@ After ``android-config``, run ``android-make`` to compile sources.
 Building documentation
 ----------------------
 
-`Sphinx <http://sphinx.pocoo.org/>`_ is used to build the
+`Sphinx <http://sphinx-doc.org/>`_ is used to build the
 documentation. aria2 man pages will be build when you run ``make`` if
 they are not up-to-date.  You can also build HTML version of aria2 man
 page by ``make html``. The HTML version manual is also available at
 `online <https://aria2.github.io/manual/en/html/>`_ (`Russian
-translation <https://aria2.github.io/manual/ru/html/>`_,
-`Portuguese translation
-<https://aria2.github.io/manual/pt/html/>`_).
+translation <https://aria2.github.io/manual/ru/html/>`_, `Portuguese
+translation <https://aria2.github.io/manual/pt/html/>`_).
 
 BitTorrent
 -----------
@@ -584,4 +578,4 @@ References
 * `BitTorrent: Private Torrents <http://www.bittorrent.org/beps/bep_0027.html>`_
 * `BitTorrent: BitTorrent DHT Extensions for IPv6 <http://www.bittorrent.org/beps/bep_0032.html>`_
 * `BitTorrent: Message Stream Encryption <http://wiki.vuze.com/w/Message_Stream_Encryption>`_
-* `Kademlia: A Peer-to-peer Information System Based on the  XOR Metric <http://pdos.csail.mit.edu/~petar/papers/maymounkov-kademlia-lncs.pdf>`_
+* `Kademlia: A Peer-to-peer Information System Based on the  XOR Metric <https://pdos.csail.mit.edu/~petar/papers/maymounkov-kademlia-lncs.pdf>`_

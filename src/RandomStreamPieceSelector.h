@@ -2,7 +2,7 @@
 /*
  * aria2 - The high speed download utility
  *
- * Copyright (C) 2010 Tatsuhiro Tsujikawa
+ * Copyright (C) 2015 Tatsuhiro Tsujikawa
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -32,27 +32,30 @@
  * files in the program, then also delete it here.
  */
 /* copyright --> */
+#ifndef D_RANDOM_STREAM_PIECE_SELECTOR_H
+#define D_RANDOM_STREAM_PIECE_SELECTOR_H
 
-#ifndef D_LPD_MESSAGE_H
-#define D_LPD_MESSAGE_H
-
-#include "common.h"
-
-#include <string>
-#include <memory>
+#include "StreamPieceSelector.h"
 
 namespace aria2 {
 
-class Peer;
+class BitfieldMan;
 
-struct LpdMessage {
-  std::shared_ptr<Peer> peer;
-  std::string infoHash;
-  LpdMessage();
-  LpdMessage(const std::shared_ptr<Peer>& peer, const std::string& infoHash);
-  ~LpdMessage();
+class RandomStreamPieceSelector : public StreamPieceSelector {
+public:
+  RandomStreamPieceSelector(BitfieldMan* bitfieldMan);
+  virtual ~RandomStreamPieceSelector();
+
+  virtual bool select(size_t& index, size_t minSplitSize,
+                      const unsigned char* ignoreBitfield,
+                      size_t length) CXX11_OVERRIDE;
+
+  virtual void onBitfieldInit() CXX11_OVERRIDE;
+
+private:
+  BitfieldMan* bitfieldMan_;
 };
 
 } // namespace aria2
 
-#endif // D_LPD_MESSAGE_H
+#endif // D_RANDOM_STREAM_PIECE_SELECTOR_H

@@ -140,6 +140,7 @@ SRCS =  \
 	InitiateConnectionCommand.cc InitiateConnectionCommand.h\
 	InitiateConnectionCommandFactory.cc InitiateConnectionCommandFactory.h\
 	InorderStreamPieceSelector.cc InorderStreamPieceSelector.h\
+	RandomStreamPieceSelector.cc RandomStreamPieceSelector.h\
 	InorderURISelector.cc InorderURISelector.h\
 	IOFile.cc IOFile.h\
 	IteratableChecksumValidator.cc IteratableChecksumValidator.h\
@@ -715,7 +716,6 @@ endif # !ENABLE_LIBARIA2
 
 libaria2_la_SOURCES = $(SRCS)
 
-libaria2_la_LIBADD = @WSLAY_LIBS@ @LTLIBINTL@
 
 AM_CPPFLAGS = \
 	-I$(top_srcdir)/lib -I$(top_srcdir)/intl\
@@ -742,7 +742,7 @@ AM_LDFLAGS = \
 	@EXTRALDFLAGS@ \
 	@APPLETLS_LDFLAGS@
 
-LDADD = libaria2.la @ALLOCA@ \
+EXTLDADD = @ALLOCA@ \
 	@EXTRALIBS@ \
 	@ZLIB_LIBS@ \
 	@LIBUV_LIBS@ \
@@ -761,7 +761,15 @@ LDADD = libaria2.la @ALLOCA@ \
 	@TCMALLOC_LIBS@ \
 	@JEMALLOC_LIBS@
 
+LDADD = libaria2.la
+
+if ENABLE_LIBARIA2
+libaria2_la_LIBADD = $(EXTLDADD)
+else # !ENABLE_LIBARIA2
+LDADD += $(EXTLDADD)
+endif # !ENABLE_LIBARIA2
+
 AM_CFLAGS = @EXTRACFLAGS@
 
-AM_CXXFLAGS = @WARNCXXFLAGS@ @EXTRACXXFLAGS@
+AM_CXXFLAGS = @WARNCXXFLAGS@ @CXX1XCXXFLAGS@ @EXTRACXXFLAGS@
 

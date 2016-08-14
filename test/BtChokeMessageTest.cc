@@ -19,7 +19,6 @@ class BtChokeMessageTest : public CppUnit::TestFixture {
   CPPUNIT_TEST(testCreate);
   CPPUNIT_TEST(testCreateMessage);
   CPPUNIT_TEST(testDoReceivedAction);
-  CPPUNIT_TEST(testOnSendComplete);
   CPPUNIT_TEST(testToString);
   CPPUNIT_TEST_SUITE_END();
 
@@ -36,7 +35,6 @@ public:
   void testCreate();
   void testCreateMessage();
   void testDoReceivedAction();
-  void testOnSendComplete();
   void testToString();
 
   class MockBtMessageDispatcher2 : public MockBtMessageDispatcher {
@@ -109,9 +107,9 @@ void BtChokeMessageTest::testCreateMessage()
   BtChokeMessage msg;
   unsigned char data[5];
   bittorrent::createPeerMessageString(data, sizeof(data), 1, 0);
-  unsigned char* rawmsg = msg.createMessage();
-  CPPUNIT_ASSERT(memcmp(rawmsg, data, 5) == 0);
-  delete[] rawmsg;
+  auto rawmsg = msg.createMessage();
+  CPPUNIT_ASSERT_EQUAL((size_t)5, rawmsg.size());
+  CPPUNIT_ASSERT(std::equal(std::begin(rawmsg), std::end(rawmsg), data));
 }
 
 void BtChokeMessageTest::testDoReceivedAction()
@@ -128,21 +126,6 @@ void BtChokeMessageTest::testDoReceivedAction()
 
   CPPUNIT_ASSERT(dispatcher->doChokedActionCalled);
   CPPUNIT_ASSERT(peer->peerChoking());
-}
-
-void BtChokeMessageTest::testOnSendComplete()
-{
-  BtChokeMessage msg;
-  msg.setPeer(peer);
-
-  auto dispatcher = make_unique<MockBtMessageDispatcher2>();
-  msg.setBtMessageDispatcher(dispatcher.get());
-
-  auto pu = std::unique_ptr<ProgressUpdate>{msg.getProgressUpdate()};
-  pu->update(0, true);
-
-  CPPUNIT_ASSERT(dispatcher->doChokingActionCalled);
-  CPPUNIT_ASSERT(peer->amChoking());
 }
 
 void BtChokeMessageTest::testToString()

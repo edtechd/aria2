@@ -17,7 +17,6 @@ class BtInterestedMessageTest : public CppUnit::TestFixture {
   CPPUNIT_TEST(testCreate);
   CPPUNIT_TEST(testCreateMessage);
   CPPUNIT_TEST(testDoReceivedAction);
-  CPPUNIT_TEST(testOnSendComplete);
   CPPUNIT_TEST(testToString);
   CPPUNIT_TEST_SUITE_END();
 
@@ -25,7 +24,6 @@ public:
   void testCreate();
   void testCreateMessage();
   void testDoReceivedAction();
-  void testOnSendComplete();
   void testToString();
 };
 
@@ -64,9 +62,9 @@ void BtInterestedMessageTest::testCreateMessage()
   BtInterestedMessage msg;
   unsigned char data[5];
   bittorrent::createPeerMessageString(data, sizeof(data), 1, 2);
-  unsigned char* rawmsg = msg.createMessage();
-  CPPUNIT_ASSERT(memcmp(rawmsg, data, 5) == 0);
-  delete[] rawmsg;
+  auto rawmsg = msg.createMessage();
+  CPPUNIT_ASSERT_EQUAL((size_t)5, rawmsg.size());
+  CPPUNIT_ASSERT(std::equal(std::begin(rawmsg), std::end(rawmsg), data));
 }
 
 void BtInterestedMessageTest::testDoReceivedAction()
@@ -83,23 +81,11 @@ void BtInterestedMessageTest::testDoReceivedAction()
   CPPUNIT_ASSERT(!peer->peerInterested());
   msg.doReceivedAction();
   CPPUNIT_ASSERT(peer->peerInterested());
-  CPPUNIT_ASSERT_EQUAL(0, peerStorage->getNumChokeExecuted());
+  CPPUNIT_ASSERT_EQUAL(1, peerStorage->getNumChokeExecuted());
 
   peer->amChoking(false);
   msg.doReceivedAction();
   CPPUNIT_ASSERT_EQUAL(1, peerStorage->getNumChokeExecuted());
-}
-
-void BtInterestedMessageTest::testOnSendComplete()
-{
-  BtInterestedMessage msg;
-  std::shared_ptr<Peer> peer(new Peer("host", 6969));
-  peer->allocateSessionResource(1_k, 1_m);
-  msg.setPeer(peer);
-  CPPUNIT_ASSERT(!peer->amInterested());
-  std::shared_ptr<ProgressUpdate> pu(msg.getProgressUpdate());
-  pu->update(0, true);
-  CPPUNIT_ASSERT(peer->amInterested());
 }
 
 void BtInterestedMessageTest::testToString()

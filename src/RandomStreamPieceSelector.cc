@@ -2,7 +2,7 @@
 /*
  * aria2 - The high speed download utility
  *
- * Copyright (C) 2010 Tatsuhiro Tsujikawa
+ * Copyright (C) 2015 Tatsuhiro Tsujikawa
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -32,27 +32,43 @@
  * files in the program, then also delete it here.
  */
 /* copyright --> */
-
-#ifndef D_LPD_MESSAGE_H
-#define D_LPD_MESSAGE_H
-
-#include "common.h"
-
-#include <string>
-#include <memory>
+#include "RandomStreamPieceSelector.h"
+#include "BitfieldMan.h"
+#include "SimpleRandomizer.h"
 
 namespace aria2 {
 
-class Peer;
+RandomStreamPieceSelector::RandomStreamPieceSelector(BitfieldMan* bitfieldMan)
+    : bitfieldMan_(bitfieldMan)
+{
+}
 
-struct LpdMessage {
-  std::shared_ptr<Peer> peer;
-  std::string infoHash;
-  LpdMessage();
-  LpdMessage(const std::shared_ptr<Peer>& peer, const std::string& infoHash);
-  ~LpdMessage();
-};
+RandomStreamPieceSelector::~RandomStreamPieceSelector() {}
+
+bool RandomStreamPieceSelector::select(size_t& index, size_t minSplitSize,
+                                       const unsigned char* ignoreBitfield,
+                                       size_t length)
+{
+  size_t start = SimpleRandomizer::getInstance()->getRandomNumber(
+      bitfieldMan_->countBlock());
+
+  auto rv = bitfieldMan_->getInorderMissingUnusedIndex(
+      index, start, bitfieldMan_->countBlock(), minSplitSize, ignoreBitfield,
+      length);
+  if (rv) {
+    return true;
+  }
+  rv = bitfieldMan_->getInorderMissingUnusedIndex(index, 0, start, minSplitSize,
+                                                  ignoreBitfield, length);
+  if (rv) {
+    return true;
+  }
+  // Fall back to inorder search because randomized search may fail
+  // because of |minSplitSize| constraint.
+  return bitfieldMan_->getInorderMissingUnusedIndex(index, minSplitSize,
+                                                    ignoreBitfield, length);
+}
+
+void RandomStreamPieceSelector::onBitfieldInit() {}
 
 } // namespace aria2
-
-#endif // D_LPD_MESSAGE_H

@@ -219,14 +219,18 @@ Context::Context(bool standalone, int argc, char** argv, const KeyVals& options)
 
   if (op->getAsBool(PREF_DISABLE_IPV6)) {
     SocketCore::setProtocolFamily(AF_INET);
-    // Get rid of AI_ADDRCONFIG. It causes name resolution error
-    // when none of network interface has IPv4 address.
-    setDefaultAIFlags(0);
   }
   SocketCore::setIpDscp(op->getAsInt(PREF_DSCP));
   SocketCore::setSocketRecvBufferSize(
       op->getAsInt(PREF_SOCKET_RECV_BUFFER_SIZE));
   net::checkAddrconfig();
+
+  if (!net::getIPv4AddrConfigured() && !net::getIPv6AddrConfigured()) {
+    // Get rid of AI_ADDRCONFIG. It causes name resolution error when
+    // none of network interface has IPv4/v6 address.
+    setDefaultAIFlags(0);
+  }
+
   // Bind interface
   if (!op->get(PREF_INTERFACE).empty()) {
     std::string iface = op->get(PREF_INTERFACE);
@@ -301,6 +305,10 @@ Context::Context(bool standalone, int argc, char** argv, const KeyVals& options)
     global::cout()->printf("%s\n", MSG_NO_FILES_TO_DOWNLOAD);
   }
   else {
+    if (!requestGroups.empty()) {
+      A2_LOG_NOTICE(fmt("Downloading %" PRId64 " items",
+                        static_cast<uint64_t>(requestGroups.size())));
+    }
     reqinfo = std::make_shared<MultiUrlRequestInfo>(std::move(requestGroups),
                                                     op, uriListParser);
   }
