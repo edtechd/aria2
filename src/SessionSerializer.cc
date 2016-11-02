@@ -272,43 +272,61 @@ bool writeDownloadResult(IOFile& fp, std::set<a2_gid_t>& metainfoCache,
 }
 } // namespace
 
+namespace {
+template <typename InputIt>
+bool saveDownloadResult(IOFile& fp, std::set<a2_gid_t>& metainfoCache,
+                        InputIt first, InputIt last, bool saveInProgress,
+                        bool saveError)
+{
+  for (; first != last; ++first) {
+    const auto& dr = *first;
+    auto save = false;
+    switch (dr->result) {
+    case error_code::FINISHED:
+    case error_code::REMOVED:
+      save = dr->option->getAsBool(PREF_FORCE_SAVE);
+      break;
+    case error_code::IN_PROGRESS:
+      save = saveInProgress;
+      break;
+    case error_code::RESOURCE_NOT_FOUND:
+    case error_code::MAX_FILE_NOT_FOUND:
+      save = saveError && dr->option->getAsBool(PREF_SAVE_NOT_FOUND);
+      break;
+    default:
+      save = saveError;
+      break;
+    }
+    if (save && !writeDownloadResult(fp, metainfoCache, dr, false)) {
+      return false;
+    }
+  }
+  return true;
+}
+} // namespace
+
 bool SessionSerializer::save(IOFile& fp) const
 {
   std::set<a2_gid_t> metainfoCache;
-  const DownloadResultList& results = rgman_->getDownloadResults();
-  for (const auto& dr : results) {
-    if (dr->result == error_code::FINISHED ||
-        dr->result == error_code::REMOVED) {
-      if (dr->option->getAsBool(PREF_FORCE_SAVE)) {
-        if (!writeDownloadResult(fp, metainfoCache, dr, false)) {
-          return false;
-        }
-      }
-      else {
-        continue;
-      }
-    }
-    else if (dr->result == error_code::IN_PROGRESS) {
-      if (saveInProgress_) {
-        if (!writeDownloadResult(fp, metainfoCache, dr, false)) {
-          return false;
-        }
-      }
-    }
-    else {
-      // error download
-      if (saveError_) {
-        if (!writeDownloadResult(fp, metainfoCache, dr, false)) {
-          return false;
-        }
-      }
-    }
+
+  const auto& unfinishedResults = rgman_->getUnfinishedDownloadResult();
+  if (!saveDownloadResult(fp, metainfoCache, std::begin(unfinishedResults),
+                          std::end(unfinishedResults), saveInProgress_,
+                          saveError_)) {
+    return false;
   }
+
+  const auto& results = rgman_->getDownloadResults();
+  if (!saveDownloadResult(fp, metainfoCache, std::begin(results),
+                          std::end(results), saveInProgress_, saveError_)) {
+    return false;
+  }
+
   {
     // Save active downloads.
     const RequestGroupList& groups = rgman_->getRequestGroups();
     for (const auto& rg : groups) {
-      std::shared_ptr<DownloadResult> dr = rg->createDownloadResult();
+      auto dr = rg->createDownloadResult();
       bool stopped = dr->result == error_code::FINISHED ||
                      dr->result == error_code::REMOVED;
       if ((!stopped && saveInProgress_) ||
@@ -321,9 +339,9 @@ bool SessionSerializer::save(IOFile& fp) const
     }
   }
   if (saveWaiting_) {
-    const RequestGroupList& groups = rgman_->getReservedGroups();
+    const auto& groups = rgman_->getReservedGroups();
     for (const auto& rg : groups) {
-      std::shared_ptr<DownloadResult> result = rg->createDownloadResult();
+      auto result = rg->createDownloadResult();
       if (!writeDownloadResult(fp, metainfoCache, result,
                                rg->isPauseRequested())) {
         return false;

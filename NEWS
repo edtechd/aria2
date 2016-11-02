@@ -1,70 +1,43 @@
-aria2 1.25.0
+aria2 1.28.0
 ============
 
 Release Note
 ------------
 
-This release fixes many bugs reported so far.  There is no new
-functionality in this release.  We have fixed many performance issues
-in BitTorrent downloads.
+This release fixes the bug that file name is not logged with
+--conditional-get option is used.  The new option
+--keep-unfinished-download-result was added to keep incomplete
+downloads in memory regardless of --max-download-result so that we can
+save those downloads with --save-session option.  This option is
+enabled by default.
+
+This release
 
 Changes
 -------
 
-* Update third-party libraries for binary releases
+* Restore LTLIBINTL in src/Makefile.am
 
-* Send have message without too much delay
+  Patch from Juan Francisco Cantero Hurtado
 
-  Also send bitfield rather than have messages if bitfield message is
-  equal to or less than the sum of have messages which otherwise would
-  be sent.
+* Add --keep-unfinished-download-result option
 
-* Fix bug that causes bogus EOF connection failure in BitTorrent
-  downloads
+  This option keeps unfinished download results even if doing so
+  exceeds --max-download-result.  This is useful if all unfinished
+  downloads must be saved in session file (see --save-session option).
+  Please keep in mind that there is no upper bound to the number of
+  unfinished download result to keep.  This option is enabled by
+  default.
 
-* Fix frequent interested/not interested message transmission
+* Fix -Wexpansion-to-defined warning with clang-3.9
 
-* Fix frequent choke/unchoke message transmission
+  The error message was:
 
-* Try to use available URI if all pooled requests are sleeping
-* Update expat in OSX build
+  warning: macro expansion producing 'defined' has undefined behavior
+  [-Wexpansion-to-defined]
 
-  Closes GH-694
+  http://lists.llvm.org/pipermail/cfe-commits/Week-of-Mon-20160118/147239.html
 
-* aria2mon: Add --secret option
+* Fix bug that file name is not logged with --conditional-get
 
-  Fixes GH-700
-
-* Set server status error on network failure in server performance
-  profile
-
-* Disable AI_ADDRCONFIG if no IPv4/IPv6 address is configured for any
-  interface
-
-  Fixes GH-698
-
-* Russian manual: Update aria2c.rst
-
-  Patch from ITriskTI
-
-* Apply --retry-wait on 503 only
-
-* Ensure that lowest speed check is done even when download speed is 0
-
-  Fixes GH-686
-
-* Document that -o is always relative to -d option
-
-  Fixes GH-684
-
-* Allow larger ut_metadata size
-
-  Fixes GH-681
-
-* mingw: Change FD_SETSIZE to 32768
-
-  Fixes GH-678
-
-* Fix compile error on OS X
-
-  Fixes GH-683
+  GH-742

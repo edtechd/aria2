@@ -49,7 +49,7 @@ public:
     memcpy(buf_.get(), data, size);
   }
 
-  virtual ~ulong() {}
+  virtual ~ulong() = default;
 
   ulong<dim>& operator=(const ulong<dim>& rhs)
   {
@@ -196,7 +196,7 @@ public:
   }
   ulong<dim>& operator*=(const ulong<dim>& rhs)
   {
-    *this = *this* rhs;
+    *this = *this * rhs;
     return *this;
   }
 

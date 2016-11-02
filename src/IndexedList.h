@@ -50,10 +50,12 @@ template <typename SeqType, typename ValueType, typename ReferenceType,
           typename PointerType, typename SeqIteratorType>
 struct IndexedListIterator {
   typedef IndexedListIterator<SeqType, ValueType, ValueType&, ValueType*,
-                              typename SeqType::iterator> iterator;
+                              typename SeqType::iterator>
+      iterator;
   typedef IndexedListIterator<SeqType, ValueType, const ValueType&,
                               const ValueType*,
-                              typename SeqType::const_iterator> const_iterator;
+                              typename SeqType::const_iterator>
+      const_iterator;
 
   typedef typename SeqIteratorType::iterator_category iterator_category;
   typedef ValueType value_type;
@@ -63,7 +65,7 @@ struct IndexedListIterator {
   typedef typename SeqType::difference_type difference_type;
   typedef IndexedListIterator SelfType;
 
-  IndexedListIterator() {}
+  IndexedListIterator() = default;
   IndexedListIterator(const iterator& other) : p(other.p) {}
   IndexedListIterator(const SeqIteratorType& p) : p(p) {}
 
@@ -305,8 +307,8 @@ operator-(const IndexedListIterator<SeqType, ValueType, ReferenceTypeL,
 
 template <typename KeyType, typename ValuePtrType> class IndexedList {
 public:
-  IndexedList() {}
-  ~IndexedList() {}
+  IndexedList() = default;
+  ~IndexedList() = default;
 
   typedef KeyType key_type;
   typedef ValuePtrType value_type;
@@ -314,11 +316,12 @@ public:
   typedef std::deque<std::pair<KeyType, ValuePtrType>> SeqType;
 
   typedef IndexedListIterator<SeqType, ValuePtrType, ValuePtrType&,
-                              ValuePtrType*,
-                              typename SeqType::iterator> iterator;
+                              ValuePtrType*, typename SeqType::iterator>
+      iterator;
   typedef IndexedListIterator<SeqType, ValuePtrType, const ValuePtrType&,
                               const ValuePtrType*,
-                              typename SeqType::const_iterator> const_iterator;
+                              typename SeqType::const_iterator>
+      const_iterator;
 
   ValuePtrType& operator[](size_t n) { return seq_[n].second; }
 

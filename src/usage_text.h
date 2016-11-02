@@ -585,7 +585,7 @@
 #define TEXT_ON_DOWNLOAD_START                                          \
   _(" --on-download-start=COMMAND  Set the command to be executed after download\n" \
     "                              got started. aria2 passes 3 arguments to COMMAND:\n" \
-    "                              GID, the nubmer of files and file path. See Event\n" \
+    "                              GID, the number of files and file path. See Event\n" \
     "                              Hook in man page for more details.")
 #define TEXT_ON_DOWNLOAD_PAUSE                                          \
   _(" --on-download-pause=COMMAND  Set the command to be executed after download\n" \
@@ -795,7 +795,10 @@
     "                              is pushed to the back. Setting big number in this\n" \
     "                              option may result high memory consumption after\n" \
     "                              thousands of downloads. Specifying 0 means no\n" \
-    "                              download result is kept.")
+    "                              download result is kept. Note that unfinished\n" \
+    "                              downloads are kept in memory regardless of this\n" \
+    "                              option value. See\n" \
+    "                              --keep-unfinished-download-result option.")
 #define TEXT_ASYNC_DNS_SERVER                   \
   _(" --async-dns-server=IPADDRESS[,...] Comma separated list of DNS server address\n" \
     "                              used in asynchronous DNS resolver. Usually\n" \
@@ -971,6 +974,11 @@
     "                              situations. This may be useful to save\n" \
     "                              BitTorrent seeding which is recognized as\n" \
     "                              completed state.")
+#define TEXT_SAVE_NOT_FOUND                         \
+  _(" --save-not-found[=true|false] Save download with --save-session option even\n" \
+    "                              if the file was not found on the server. This\n" \
+    "                              option also saves control file in that\n" \
+    "                              situations.")
 #define TEXT_DISK_CACHE                         \
   _(" --disk-cache=SIZE            Enable disk cache. If SIZE is 0, the disk cache\n" \
     "                              is disabled. This feature caches the downloaded\n" \
@@ -1072,7 +1080,7 @@
 #define TEXT_SOCKET_RECV_BUFFER_SIZE                                    \
   _(" --socket-recv-buffer-size=SIZE\n"                                 \
     "                              Set the maximum socket receive buffer in bytes.\n" \
-    "                              Specifing 0 will disable this option. This value\n" \
+    "                              Specifying 0 will disable this option. This value\n" \
     "                              will be set to socket file descriptor using\n" \
     "                              SO_RCVBUF socket option with setsockopt() call.")
 #define TEXT_BT_ENABLE_HOOK_AFTER_HASH_CHECK                            \
@@ -1094,5 +1102,14 @@
 #define TEXT_STDERR \
   _(" --stderr[=true|false]        Redirect all console output that would be\n" \
     "                              otherwise printed in stdout to stderr.")
+#define TEXT_KEEP_UNFINISHED_DOWNLOAD_RESULT \
+  _(" --keep-unfinished-download-result[=true|false]\n" \
+    "                              Keep unfinished download results even if doing\n" \
+    "                              so exceeds --max-download-result. This is useful\n" \
+    "                              if all unfinished downloads must be saved in\n" \
+    "                              session file (see --save-session option). Please\n" \
+    "                              keep in mind that there is no upper bound to the\n" \
+    "                              number of unfinished download result to keep. If\n" \
+    "                              that is undesirable, turn this option off.")
 
 // clang-format on

@@ -349,6 +349,8 @@ PrefPtr PREF_STOP_WITH_PROCESS = makePref("stop-with-process");
 PrefPtr PREF_ENABLE_MMAP = makePref("enable-mmap");
 // value: true | false
 PrefPtr PREF_FORCE_SAVE = makePref("force-save");
+// value: true | false
+PrefPtr PREF_SAVE_NOT_FOUND = makePref("save-not-found");
 // value: 1*digit
 PrefPtr PREF_DISK_CACHE = makePref("disk-cache");
 // value: string
@@ -372,6 +374,9 @@ PrefPtr PREF_SOCKET_RECV_BUFFER_SIZE = makePref("socket-recv-buffer-size");
 PrefPtr PREF_MAX_MMAP_LIMIT = makePref("max-mmap-limit");
 // value: true | false
 PrefPtr PREF_STDERR = makePref("stderr");
+// value: true | false
+PrefPtr PREF_KEEP_UNFINISHED_DOWNLOAD_RESULT =
+    makePref("keep-unfinished-download-result");
 
 /**
  * FTP related preferences
