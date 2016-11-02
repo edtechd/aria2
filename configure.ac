@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 #
 AC_PREREQ([2.67])
-AC_INIT([aria2],[1.19.3],[https://github.com/tatsuhiro-t/aria2/issues],[aria2],[https://aria2.github.io/])
+AC_INIT([aria2],[1.28.0],[https://github.com/aria2/aria2/issues],[aria2],[https://aria2.github.io/])
 
 AC_CANONICAL_HOST
 AC_CANONICAL_TARGET
@@ -21,7 +21,7 @@ AC_SUBST(LT_REVISION, 0)
 AC_SUBST(LT_AGE, 0)
 
 AC_CONFIG_MACRO_DIR([m4])
-AM_PATH_CPPUNIT(1.10.2)
+m4_ifdef([AM_PATH_CPPUNIT], [AM_PATH_CPPUNIT(1.10.2)])
 AC_CONFIG_SRCDIR([src/a2io.h])
 AC_CONFIG_HEADERS([config.h])
 
@@ -95,6 +95,13 @@ AC_ARG_WITH([bashcompletiondir],
 
 AC_ARG_VAR([ARIA2_STATIC], [Set 'yes' to build a statically linked aria2])
 
+AC_ARG_ENABLE([gnutls-system-crypto-policy],
+    AS_HELP_STRING([--enable-gnutls-system-crypto-policy], [Enable gnutls system wide crypto policy]))
+
+AS_IF([test "x$enable_gnutls_system_crypto_policy" = "xyes"], [
+  AC_DEFINE([USE_GNUTLS_SYSTEM_CRYPTO_POLICY], [1], [Define to 1 if using gnutls system wide crypto policy .])
+])
+
 # Checks for programs.
 AC_PROG_CXX
 AC_PROG_CC
@@ -132,9 +139,19 @@ AC_LANG([C++])
 PKG_PROG_PKG_CONFIG([0.20])
 
 # Check C++ compiler supports C++0x/C++11 feature
+save_CXXFLAGS="$CXXFLAGS"
+CXXFLAGS=
+
 AX_CXX_COMPILE_STDCXX_11([noext], [mandatory])
 
+CXX1XCXXFLAGS="$CXXFLAGS"
+CXXFLAGS="$save_CXXFLAGS"
+AC_SUBST([CXX1XCXXFLAGS])
+
 # Check C++ compiler actually supports nullptr
+save_CXXFLAGS=$CXXFLAGS
+CXXFLAGS="$CXXFLAGS $CXX1XCXXFLAGS"
+
 AC_MSG_CHECKING([whether the c++ compiler supports nullptr])
 AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
 ]],
@@ -164,6 +181,8 @@ Derived x;
     [AC_MSG_RESULT([no])])
 AC_DEFINE_UNQUOTED([CXX11_OVERRIDE], [$cxx11_override],
                    [Define `override` keyword if the compiler supports it])
+
+CXXFLAGS=$save_CXXFLAGS
 
 # Check static build is requested
 if test "x$ARIA2_STATIC" = "xyes"; then
@@ -203,8 +222,8 @@ if test "x$with_libz" = "xyes"; then
     AC_DEFINE([HAVE_ZLIB], [1], [Define to 1 if you have zlib.])
     # Android NDK arch-mips contains gzbuffer symbol but it is missing
     # in zlib.h
-    old_CFLAGS=$CFLAGS
-    old_LIBS=$LIBS
+    save_CFLAGS=$CFLAGS
+    save_LIBS=$LIBS
     CFLAGS="$CFLAGS $ZLIB_CFLAGS"
     LIBS="$ZLIB_LIBS $LIBS"
     AC_CHECK_DECL([gzbuffer], [have_decl_gzbuffer=yes], [],
@@ -213,8 +232,8 @@ if test "x$with_libz" = "xyes"; then
       AC_CHECK_FUNC([gzbuffer])
     fi
     AC_CHECK_FUNCS([gzsetparams])
-    CFLAGS=$old_CFLAGS
-    LIBS=$old_LIBS
+    CFLAGS=$save_CFLAGS
+    LIBS=$save_LIBS
   fi
 fi
 
@@ -223,8 +242,8 @@ if test "x$with_libuv" = "xyes"; then
   case "$host" in
     *mingw*|*msvc*)
       libuv_cflags="-D_WIN32_WINNT=0x0600"
-      old_CPPFLAGS=$CPPFLAGS
-      old_LIBS=$LIBS
+      save_CPPFLAGS=$CPPFLAGS
+      save_LIBS=$LIBS
       CPPFLAGS="$CPPFLAGS $libuv_cflags"
       AC_SEARCH_LIBS([uv_poll_init_socket], [uv], [
                       AC_CHECK_HEADER([uv.h], [have_libuv=yes], [have_libuv=no])
@@ -235,14 +254,14 @@ if test "x$with_libuv" = "xyes"; then
         AC_SUBST([LIBUV_CFLAGS])
         AC_SUBST([LIBUV_LIBS])
       fi
-      CPPFLAGS=$old_CPPFLAGS
-      CPPLIBS=$old_LIBS
+      CPPFLAGS=$save_CPPFLAGS
+      CPPLIBS=$save_LIBS
     ;;
 
     *darwin*)
       libuv_ldflags="-framework Foundation -framework CoreServices -framework ApplicationServices"
-      old_LDFLAGS=$LDFLAGS
-      old_LIBS=$LIBS
+      save_LDFLAGS=$LDFLAGS
+      save_LIBS=$LIBS
       LDFLAGS="$LDFLAGS $libuv_ldflags"
       AC_SEARCH_LIBS([uv_poll_init_socket], [uv], [
                       AC_CHECK_HEADER([uv.h], [have_libuv=yes], [have_libuv=no])
@@ -253,16 +272,16 @@ if test "x$with_libuv" = "xyes"; then
         AC_SUBST([LIBUV_CFLAGS])
         AC_SUBST([LIBUV_LIBS])
       fi
-      LDFLAGS=$old_LDFLAGS
-      LIBS=$old_LIBS
+      LDFLAGS=$save_LDFLAGS
+      LIBS=$save_LIBS
       ;;
 
     *)
       dnl Yeah, sucks that luv does not bring a pkg-config or config-tool
       AC_MSG_CHECKING([for libuv])
-      old_LIBS=$LIBS
+      save_LIBS=$LIBS
       for combo in "" "-lrt" "-ldl -lrt" "-ldl -lrt -lpthread" "-lkvm"; do
-        LIBS="-luv $combo $old_LIBS -lm"
+        LIBS="-luv $combo $save_LIBS -lm"
         AC_LINK_IFELSE([AC_LANG_SOURCE([
 extern "C" int uv_poll_init_socket(void);
 int main() { return uv_poll_init_socket(); }
@@ -278,7 +297,7 @@ int main() { return uv_poll_init_socket(); }
           break;
         fi
       done
-      LIBS=$old_LIBS
+      LIBS=$save_LIBS
       if test "x$have_libuv" != "xyes"; then
         AC_MSG_RESULT("no")
       fi
@@ -287,10 +306,10 @@ int main() { return uv_poll_init_socket(); }
 
   if test "x$have_libuv" = "xyes"; then
     AC_DEFINE([HAVE_LIBUV], [1], [Define to 1 if you have libuv.])
-    old_LIBS=$LIBS
+    save_LIBS=$LIBS
     LIBS="$LIBUV_LIBS $LIBS"
     AC_CHECK_FUNCS([uv_last_error])
-    LIBS=$old_LIBS
+    LIBS=$save_LIBS
   elif test "x$with_libuv_requested" = "xyes"; then
     ARIA2_DEP_NOT_MET([libuv])
   fi
@@ -299,7 +318,13 @@ AM_CONDITIONAL([HAVE_LIBUV], [test "x$have_libuv" = "xyes"])
 
 have_libxml2=no
 if test "x$with_libxml2" = "xyes"; then
-  AM_PATH_XML2([2.6.24], [have_libxml2=yes])
+  m4_ifdef([AM_PATH_XML2], [AM_PATH_XML2([2.6.24], [have_libxml2=yes])], [
+    AC_MSG_WARN([configure was generated without libxml2 detection.  libxml2 detection is disabled])
+    XML_CPPFLAGS=
+    XML_LIBS=
+    AC_SUBST([XML_CPPFLAGS])
+    AC_SUBST([XML_LIBS])
+  ])
   if test "x$have_libxml2" = "xyes"; then
     AC_DEFINE([HAVE_LIBXML2], [1], [Define to 1 if you have libxml2.])
   elif test "x$with_libxml2_requested" = "xyes"; then
@@ -309,7 +334,13 @@ fi
 
 have_libexpat=no
 if test "x$with_libexpat" = "xyes" && test "x$have_libxml2" != "xyes"; then
-  AM_PATH_LIBEXPAT
+  m4_ifdef([AM_PATH_LIBEXPAT], [AM_PATH_LIBEXPAT], [
+    AC_MSG_WARN([configure was generated without libexpat detection.  libexpat detection is disabled])
+    EXPAT_CFLAGS=
+    EXPAT_LIBS=
+    AC_SUBST([EXPAT_CFLAGS])
+    AC_SUBST([EXPAT_LIBS])
+  ])
   if test "x$have_libexpat" != "xyes" &&
      test "x$with_libexpat_requested" = "xyes"; then
     ARIA2_DEP_NOT_MET([libexpat])
@@ -321,10 +352,10 @@ if test "x$with_sqlite3" = "xyes"; then
   PKG_CHECK_MODULES([SQLITE3],[sqlite3],[have_sqlite3=yes],[have_sqlite3=no])
   if test "x$have_sqlite3" = "xyes"; then
     AC_DEFINE([HAVE_SQLITE3], [1], [Define to 1 if you have sqlite3.])
-    old_LIBS=$LIBS
+    save_LIBS=$LIBS
     LIBS="$SQLITE3_LIBS $LIBS"
     AC_CHECK_FUNCS([sqlite3_open_v2])
-    LIBS=$old_LIBS
+    LIBS=$save_LIBS
   else
     AC_MSG_WARN([$SQLITE3_PKG_ERRORS])
     if test "x$with_sqlite3_requested" = "xyes"; then
@@ -435,10 +466,10 @@ if test "x$with_gnutls" = "xyes" && test "x$have_ssl" != "xyes"; then
   if test "x$have_libgnutls" = "xyes"; then
     have_ssl=yes
     AC_DEFINE([HAVE_LIBGNUTLS], [1], [Define to 1 if you have libgnutls.])
-    old_LIBS=$LIBS
+    save_LIBS=$LIBS
     LIBS="$LIBGNUTLS_LIBS $LIBS"
     AC_CHECK_FUNCS([gnutls_certificate_set_x509_system_trust])
-    LIBS=$old_LIBS
+    LIBS=$save_LIBS
   else
     AC_MSG_WARN([$LIBGNUTLS_PKG_ERRORS])
     if test "x$with_gnutls_requested" = "xyes"; then
@@ -455,7 +486,7 @@ if test "x$with_openssl" = "xyes" && test "x$have_ssl" != "xyes"; then
     have_ssl=yes
     AC_DEFINE([HAVE_OPENSSL], [1], [Define to 1 if you have openssl.])
 
-    old_LIBS=$LIBS
+    save_LIBS=$LIBS
     LIBS="$OPENSSL_LIBS $LIBS"
     AC_CHECK_FUNCS([EVP_DigestInit_ex], [have_digestinit_ex=yes])
     if test "x$have_digestinit_ex" = "x"; then
@@ -465,7 +496,7 @@ if test "x$with_openssl" = "xyes" && test "x$have_ssl" != "xyes"; then
     AC_CHECK_FUNCS([EVP_sha256])
     AC_CHECK_FUNCS([EVP_sha384])
     AC_CHECK_FUNCS([EVP_sha512])
-    LIBS=$old_LIBS
+    LIBS=$save_LIBS
   else
     AC_MSG_WARN([$OPENSSL_PKG_ERRORS])
     if test "x$with_openssl_requested" = "xyes"; then
@@ -501,10 +532,10 @@ if test "x$have_openssl" != "xyes"; then
       AC_SUBST([LIBGMP_CFLAGS])
       AC_SUBST([LIBGMP_LIBS])
       AC_DEFINE([HAVE_LIBGMP], [1], [Define to 1 if you have libgmp.])
-      old_LIBS=$LIBS
+      save_LIBS=$LIBS
       LIBS="$LIBGMP_LIBS $LIBS"
       AC_CHECK_FUNCS([__gmpz_powm_sec], [have_mpz_powm_sec=yes])
-      LIBS=$old_LIBS
+      LIBS=$save_LIBS
       if test "x$have_mpz_powm_sec" = "xyes"; then
         AC_DEFINE([HAVE_GMP_SEC], [1], [Define to 1 if you have a GMP with sec functions.])
       fi
@@ -518,7 +549,13 @@ if test "x$have_openssl" != "xyes"; then
   if test "x$with_libgcrypt" = "xyes" &&
      test "x$have_nativetls" != "xyes" &&
      test "x$have_libnettle" != "xyes"; then
-    AM_PATH_LIBGCRYPT([1.2.4], [have_libgcrypt=yes])
+    m4_ifdef([AM_PATH_LIBGCRYPT], [AM_PATH_LIBGCRYPT([1.2.4], [have_libgcrypt=yes])], [
+    AC_MSG_WARN([configure was generated without libgcrypt detection.  libgcrypt detection is disabled])
+      LIBGCRYPT_CFLAGS=
+      LIBGCRYPT_LIBS=
+      AC_SUBST([LIBGCRYPT_CFLAGS])
+      AC_SUBST([LIBGCRYPT_LIBS])
+    ])
     if test "x$have_libgcrypt" = "xyes"; then
       AC_DEFINE([HAVE_LIBGCRYPT], [1], [Define to 1 if you have libgcrypt.])
     fi
@@ -544,14 +581,14 @@ if test "x$with_libcares" = "xyes"; then
                     [have_libcares=no])
   if test "x$have_libcares" = "xyes"; then
     AC_DEFINE([HAVE_LIBCARES], [1], [Define to 1 if you have libcares.])
-    old_LIBS=$LIBS
-    old_CPPFLAGS=$CPPFLAGS
+    save_LIBS=$LIBS
+    save_CPPFLAGS=$CPPFLAGS
     LIBS="$LIBCARES_LIBS $LIBS"
     CPPFLAGS="$LIBCARES_CFLAGS $CPPFLAGS"
     AC_CHECK_TYPES([ares_addr_node], [], [], [[#include <ares.h>]])
     AC_CHECK_FUNCS([ares_set_servers])
-    LIBS=$old_LIBS
-    CPPFLAGS=$old_CPPFLAGS
+    LIBS=$save_LIBS
+    CPPFLAGS=$save_CPPFLAGS
 
     # -DCARES_STATICLIB is appended by pkg-config file libcares.pc
   else
@@ -691,11 +728,11 @@ AM_CONDITIONAL([HAVE_LIBSSH2], [test "x$have_libssh2" = "xyes"])
 
 case "$host" in
   *solaris*)
-    old_LIBS=$LIBS
+    save_LIBS=$LIBS
     LIBS=
-    AC_SEARCH_LIBS([getaddrinfo], [nsl socket], [], [$old_LIBS])
+    AC_SEARCH_LIBS([getaddrinfo], [nsl socket], [], [$save_LIBS])
     EXTRALIBS="$LIBS $EXTRALIBS"
-    LIBS=$old_LIBS
+    LIBS=$save_LIBS
     ;;
 esac
 
@@ -922,7 +959,7 @@ AM_CONDITIONAL([HAVE_SOME_FALLOCATE],
   || test "x$have_osx" = "xyes" || test "x$win_build" = "xyes"])
 
 # mingw needs this
-old_CPPFLAGS=$CPPFLAGS
+save_CPPFLAGS=$CPPFLAGS
 CPPFLAGS="$CPPFLAGS $EXTRACPPFLAGS"
 AC_MSG_CHECKING([for asctime_r])
 AC_LINK_IFELSE([AC_LANG_PROGRAM([[
@@ -949,7 +986,7 @@ AC_LINK_IFELSE([AC_LANG_PROGRAM([[
    AC_DEFINE([HAVE_LOCALTIME_R], [1], [Define to 1 if you have the `localtime_r' function or macro.])],
   [AC_MSG_RESULT([no])
    AM_CONDITIONAL([HAVE_LOCALTIME_R], false)])
-CPPFLAGS=$old_CPPFLAGS
+CPPFLAGS=$save_CPPFLAGS
 
 AC_CHECK_FUNCS([basename],
         [AM_CONDITIONAL([HAVE_BASENAME], true)],
@@ -966,9 +1003,6 @@ AC_CHECK_FUNCS([gettimeofday],
 AC_CHECK_FUNCS([strptime],
         [AM_CONDITIONAL([HAVE_STRPTIME], true)],
         [AM_CONDITIONAL([HAVE_STRPTIME], false)])
-AC_CHECK_FUNCS([timegm],
-        [AM_CONDITIONAL([HAVE_TIMEGM], true)],
-        [AM_CONDITIONAL([HAVE_TIMEGM], false)])
 AC_CHECK_FUNCS([daemon], [have_daemon=yes])
 AM_CONDITIONAL([HAVE_DAEMON], [test "x$have_daemon" = "xyes"])
 
@@ -985,6 +1019,18 @@ case "$host" in
     ;;
   *)
     AM_CONDITIONAL([MINGW_BUILD], false)
+    ;;
+esac
+
+case "$host" in
+  *android*)
+    # timegm is not declared with Android NDK r12b
+    AM_CONDITIONAL([HAVE_TIMEGM], false)
+    ;;
+  *)
+    AC_CHECK_FUNCS([timegm],
+        [AM_CONDITIONAL([HAVE_TIMEGM], true)],
+        [AM_CONDITIONAL([HAVE_TIMEGM], false)])
     ;;
 esac
 
@@ -1118,7 +1164,7 @@ AC_SUBST([EXTRACPPFLAGS])
 AC_SUBST([EXTRALDFLAGS])
 AC_SUBST([EXTRALIBS])
 
-old_CXXFLAGS=$CXXFLAGS
+save_CXXFLAGS=$CXXFLAGS
 CXXFLAGS=
 
 if test "x$enable_werror" = "xyes"; then
@@ -1128,7 +1174,7 @@ if test "x$enable_werror" = "xyes"; then
 fi
 
 WARNCXXFLAGS=$CXXFLAGS
-CXXFLAGS=$old_CXXFLAGS
+CXXFLAGS=$save_CXXFLAGS
 
 AC_SUBST([WARNCXXFLAGS])
 
@@ -1165,6 +1211,7 @@ CPPFLAGS:       $CPPFLAGS
 LDFLAGS:        $LDFLAGS
 LIBS:           $LIBS
 DEFS:           $DEFS
+CXX1XCXXFLAGS:  $CXX1XCXXFLAGS
 EXTRACXXFLAGS:  $EXTRACXXFLAGS
 EXTRACFLAGS:    $EXTRACFLAGS
 EXTRACPPFLAGS:  $EXTRACPPFLAGS

@@ -46,6 +46,7 @@ DownloadResult::DownloadResult()
       totalLength(0),
       completedLength(0),
       uploadLength(0),
+      following(0),
       numPieces(0),
       pieceLength(0),
       result(error_code::UNDEFINED),
@@ -53,6 +54,6 @@ DownloadResult::DownloadResult()
 {
 }
 
-DownloadResult::~DownloadResult() {}
+DownloadResult::~DownloadResult() = default;
 
 } // namespace aria2

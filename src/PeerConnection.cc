@@ -81,15 +81,15 @@ PeerConnection::PeerConnection(cuid_t cuid, const std::shared_ptr<Peer>& peer,
 {
 }
 
-PeerConnection::~PeerConnection() {}
+PeerConnection::~PeerConnection() = default;
 
-void PeerConnection::pushBytes(unsigned char* data, size_t len,
+void PeerConnection::pushBytes(std::vector<unsigned char> data,
                                std::unique_ptr<ProgressUpdate> progressUpdate)
 {
   if (encryptionEnabled_) {
-    encryptor_->encrypt(len, data, data);
+    encryptor_->encrypt(data.size(), data.data(), data.data());
   }
-  socketBuffer_.pushBytes(data, len, std::move(progressUpdate));
+  socketBuffer_.pushBytes(std::move(data), std::move(progressUpdate));
 }
 
 bool PeerConnection::receiveMessage(unsigned char* data, size_t& dataLength)
@@ -124,7 +124,7 @@ bool PeerConnection::receiveMessage(unsigned char* data, size_t& dataLength)
         }
         break;
       case (BT_MSG_READ_PAYLOAD):
-        // We chosen the bufferCapacity_ so that whole message,
+        // We chose the bufferCapacity_ so that whole message,
         // including 4 bytes length and payload, in it. So here we
         // just make sure that it happens.
         if (resbufLength_ - msgOffset_ >= 4 + currentPayloadLength_) {
@@ -150,7 +150,7 @@ bool PeerConnection::receiveMessage(unsigned char* data, size_t& dataLength)
     else {
       assert(resbufOffset_ == resbufLength_);
       if (resbufLength_ != 0) {
-        if (msgOffset_ == 0 && resbufLength_ == currentPayloadLength_ + 4) {
+        if (resbufLength_ - msgOffset_ == currentPayloadLength_ + 4) {
           // All bytes in buffer have been processed, so clear it
           // away.
           resbufLength_ = 0;

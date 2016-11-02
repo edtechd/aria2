@@ -42,7 +42,7 @@
 namespace aria2 {
 
 namespace {
-constexpr auto WINDOW_TIME = 15_s;
+constexpr auto WINDOW_TIME = 10_s;
 } // namespace
 
 SpeedCalc::SpeedCalc() : accumulatedLength_(0), bytesWindow_(0), maxSpeed_(0) {}
@@ -75,13 +75,40 @@ int SpeedCalc::calculateSpeed()
     return 0;
   }
   auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
-                     timeSlots_[0].first.difference(now)).count();
+                     timeSlots_[0].first.difference(now))
+                     .count();
   if (elapsed <= 0) {
     elapsed = 1;
   }
   int speed = bytesWindow_ * 1000 / elapsed;
   maxSpeed_ = std::max(speed, maxSpeed_);
   return speed;
+}
+
+int SpeedCalc::calculateNewestSpeed(int seconds)
+{
+  const auto& now = global::wallclock();
+  removeStaleTimeSlot(now);
+
+  int64_t bytesCount(0);
+  auto it = timeSlots_.rbegin();
+  while (it != timeSlots_.rend()) {
+    if (it->first.difference(now) > seconds * 1_s) {
+      break;
+    }
+    bytesCount += (*it++).second;
+  }
+  if (it == timeSlots_.rbegin()) {
+    return 0;
+  }
+
+  auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
+                     (*--it).first.difference(now))
+                     .count();
+  if (elapsed <= 0) {
+    elapsed = 1;
+  }
+  return bytesCount * (1000. / elapsed);
 }
 
 void SpeedCalc::update(size_t bytes)
@@ -103,7 +130,8 @@ void SpeedCalc::update(size_t bytes)
 int SpeedCalc::calculateAvgSpeed() const
 {
   auto milliElapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
-                          start_.difference(global::wallclock())).count();
+                          start_.difference(global::wallclock()))
+                          .count();
   // if milliElapsed is too small, the average speed is rubbish, better
   // return 0
   if (milliElapsed > 4) {

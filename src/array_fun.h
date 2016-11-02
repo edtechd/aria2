@@ -42,7 +42,7 @@
 
 namespace aria2 {
 
-template <typename T, size_t N> constexpr size_t arraySize(T(&)[N])
+template <typename T, size_t N> constexpr size_t arraySize(T (&)[N])
 {
   return N;
 }
@@ -52,7 +52,7 @@ private:
   T array_[N];
 
 public:
-  array_wrapper() {}
+  array_wrapper() = default;
 
   operator T*() { return array_; }
 

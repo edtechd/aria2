@@ -78,7 +78,7 @@ BtPieceMessage::BtPieceMessage(size_t index, int32_t begin, int32_t blockLength)
   setUploading(true);
 }
 
-BtPieceMessage::~BtPieceMessage() {}
+BtPieceMessage::~BtPieceMessage() = default;
 
 void BtPieceMessage::setMsgPayload(const unsigned char* data) { data_ = data; }
 
@@ -212,18 +212,17 @@ void BtPieceMessage::send()
 
 void BtPieceMessage::pushPieceData(int64_t offset, int32_t length) const
 {
-  assert(length <= static_cast<int32_t>(16_k));
-  auto buf = make_unique<unsigned char[]>(length + MESSAGE_HEADER_LENGTH);
-  createMessageHeader(buf.get());
+  assert(length <= static_cast<int32_t>(MAX_BLOCK_LENGTH));
+  auto buf = std::vector<unsigned char>(length + MESSAGE_HEADER_LENGTH);
+  createMessageHeader(buf.data());
   ssize_t r;
   r = getPieceStorage()->getDiskAdaptor()->readData(
-      buf.get() + MESSAGE_HEADER_LENGTH, length, offset);
+      buf.data() + MESSAGE_HEADER_LENGTH, length, offset);
   if (r == length) {
     const auto& peer = getPeer();
     getPeerConnection()->pushBytes(
-        buf.release(), length + MESSAGE_HEADER_LENGTH,
-        make_unique<PieceSendUpdate>(downloadContext_, peer,
-                                     MESSAGE_HEADER_LENGTH));
+        std::move(buf), make_unique<PieceSendUpdate>(downloadContext_, peer,
+                                                     MESSAGE_HEADER_LENGTH));
     peer->updateUploadSpeed(length);
     downloadContext_->updateUploadSpeed(length);
   }
@@ -278,7 +277,8 @@ void BtPieceMessage::onNewPiece(const std::shared_ptr<Piece>& piece)
   A2_LOG_INFO(fmt(MSG_GOT_NEW_PIECE, getCuid(),
                   static_cast<unsigned long>(piece->getIndex())));
   getPieceStorage()->completePiece(piece);
-  getPieceStorage()->advertisePiece(getCuid(), piece->getIndex());
+  getPieceStorage()->advertisePiece(getCuid(), piece->getIndex(),
+                                    global::wallclock());
 }
 
 void BtPieceMessage::onWrongPiece(const std::shared_ptr<Piece>& piece)

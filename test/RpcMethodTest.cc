@@ -67,6 +67,9 @@ class RpcMethodTest : public CppUnit::TestFixture {
   CPPUNIT_TEST(testGetVersion);
   CPPUNIT_TEST(testNoSuchMethod);
   CPPUNIT_TEST(testGatherStoppedDownload);
+#ifdef ENABLE_BITTORRENT
+  CPPUNIT_TEST(testGatherStoppedDownload_bt);
+#endif // ENABLE_BITTORRENT
   CPPUNIT_TEST(testGatherProgressCommon);
 #ifdef ENABLE_BITTORRENT
   CPPUNIT_TEST(testGatherBitTorrentMetadata);
@@ -80,6 +83,7 @@ class RpcMethodTest : public CppUnit::TestFixture {
   CPPUNIT_TEST(testSystemMulticall);
   CPPUNIT_TEST(testSystemMulticall_fail);
   CPPUNIT_TEST(testSystemListMethods);
+  CPPUNIT_TEST(testSystemListNotifications);
   CPPUNIT_TEST_SUITE_END();
 
 private:
@@ -133,6 +137,9 @@ public:
   void testGetVersion();
   void testNoSuchMethod();
   void testGatherStoppedDownload();
+#ifdef ENABLE_BITTORRENT
+  void testGatherStoppedDownload_bt();
+#endif // ENABLE_BITTORRENT
   void testGatherProgressCommon();
 #ifdef ENABLE_BITTORRENT
   void testGatherBitTorrentMetadata();
@@ -146,6 +153,7 @@ public:
   void testSystemMulticall();
   void testSystemMulticall_fail();
   void testSystemListMethods();
+  void testSystemListNotifications();
 };
 
 CPPUNIT_TEST_SUITE_REGISTRATION(RpcMethodTest);
@@ -332,14 +340,15 @@ RpcRequest createAddTorrentReq()
 void RpcMethodTest::testAddTorrent()
 {
   File(e_->getOption()->get(PREF_DIR) +
-       "/0a3893293e27ac0490424c06de4d09242215f0a6.torrent").remove();
+       "/0a3893293e27ac0490424c06de4d09242215f0a6.torrent")
+      .remove();
   AddTorrentRpcMethod m;
   {
     // Saving upload metadata is disabled by option.
     auto res = m.execute(createAddTorrentReq(), e_.get());
-    CPPUNIT_ASSERT(
-        !File(e_->getOption()->get(PREF_DIR) +
-              "/0a3893293e27ac0490424c06de4d09242215f0a6.torrent").exists());
+    CPPUNIT_ASSERT(!File(e_->getOption()->get(PREF_DIR) +
+                         "/0a3893293e27ac0490424c06de4d09242215f0a6.torrent")
+                        .exists());
     CPPUNIT_ASSERT_EQUAL(0, res.code);
     CPPUNIT_ASSERT_EQUAL(sizeof(a2_gid_t) * 2,
                          downcast<String>(res.param)->s().size());
@@ -347,9 +356,9 @@ void RpcMethodTest::testAddTorrent()
   e_->getOption()->put(PREF_RPC_SAVE_UPLOAD_METADATA, A2_V_TRUE);
   {
     auto res = m.execute(createAddTorrentReq(), e_.get());
-    CPPUNIT_ASSERT(
-        File(e_->getOption()->get(PREF_DIR) +
-             "/0a3893293e27ac0490424c06de4d09242215f0a6.torrent").exists());
+    CPPUNIT_ASSERT(File(e_->getOption()->get(PREF_DIR) +
+                        "/0a3893293e27ac0490424c06de4d09242215f0a6.torrent")
+                       .exists());
     CPPUNIT_ASSERT_EQUAL(0, res.code);
     a2_gid_t gid;
     CPPUNIT_ASSERT_EQUAL(
@@ -449,7 +458,8 @@ RpcRequest createAddMetalinkReq()
 void RpcMethodTest::testAddMetalink()
 {
   File(e_->getOption()->get(PREF_DIR) +
-       "/c908634fbc257fd56f0114912c2772aeeb4064f4.meta4").remove();
+       "/c908634fbc257fd56f0114912c2772aeeb4064f4.meta4")
+      .remove();
   AddMetalinkRpcMethod m;
   {
     // Saving upload metadata is disabled by option.
@@ -464,9 +474,9 @@ void RpcMethodTest::testAddMetalink()
     CPPUNIT_ASSERT_EQUAL(
         0, GroupId::toNumericId(
                gid2, downcast<String>(resParams->get(1))->s().c_str()));
-    CPPUNIT_ASSERT(
-        !File(e_->getOption()->get(PREF_DIR) +
-              "/c908634fbc257fd56f0114912c2772aeeb4064f4.meta4").exists());
+    CPPUNIT_ASSERT(!File(e_->getOption()->get(PREF_DIR) +
+                         "/c908634fbc257fd56f0114912c2772aeeb4064f4.meta4")
+                        .exists());
   }
   e_->getOption()->put(PREF_RPC_SAVE_UPLOAD_METADATA, A2_V_TRUE);
   {
@@ -481,9 +491,9 @@ void RpcMethodTest::testAddMetalink()
     CPPUNIT_ASSERT_EQUAL(
         0, GroupId::toNumericId(
                gid4, downcast<String>(resParams->get(1))->s().c_str()));
-    CPPUNIT_ASSERT(
-        File(e_->getOption()->get(PREF_DIR) +
-             "/c908634fbc257fd56f0114912c2772aeeb4064f4.meta4").exists());
+    CPPUNIT_ASSERT(File(e_->getOption()->get(PREF_DIR) +
+                        "/c908634fbc257fd56f0114912c2772aeeb4064f4.meta4")
+                       .exists());
 
     auto tar = findReservedGroup(e_->getRequestGroupMan().get(), gid3);
     CPPUNIT_ASSERT(tar);
@@ -924,6 +934,7 @@ void RpcMethodTest::testGatherStoppedDownload()
   d->sessionTime = 1_s;
   d->result = error_code::FINISHED;
   d->followedBy = followedBy;
+  d->following = 1;
   d->belongsTo = 2;
   auto entry = Dict::g();
   std::vector<std::string> keys;
@@ -934,6 +945,8 @@ void RpcMethodTest::testGatherStoppedDownload()
                        downcast<String>(followedByRes->get(0))->s());
   CPPUNIT_ASSERT_EQUAL(GroupId::toHex(4),
                        downcast<String>(followedByRes->get(1))->s());
+  CPPUNIT_ASSERT_EQUAL(GroupId::toHex(1),
+                       downcast<String>(entry->get("following"))->s());
   CPPUNIT_ASSERT_EQUAL(GroupId::toHex(2),
                        downcast<String>(entry->get("belongsTo"))->s());
 
@@ -944,6 +957,29 @@ void RpcMethodTest::testGatherStoppedDownload()
   CPPUNIT_ASSERT_EQUAL((size_t)1, entry->size());
   CPPUNIT_ASSERT(entry->containsKey("gid"));
 }
+
+#ifdef ENABLE_BITTORRENT
+void RpcMethodTest::testGatherStoppedDownload_bt()
+{
+  auto d = std::make_shared<DownloadResult>();
+  d->gid = GroupId::create();
+  d->infoHash = "2089b05ecca3d829cee5497d2703803b52216d19";
+  d->attrs = std::vector<std::shared_ptr<ContextAttribute>>(MAX_CTX_ATTR);
+
+  auto torrentAttr = std::make_shared<TorrentAttribute>();
+  torrentAttr->creationDate = 1000000007;
+  d->attrs[CTX_ATTR_BT] = torrentAttr;
+
+  auto entry = Dict::g();
+  gatherStoppedDownload(entry.get(), d, {});
+
+  auto btDict = downcast<Dict>(entry->get("bittorrent"));
+  CPPUNIT_ASSERT(btDict);
+
+  CPPUNIT_ASSERT_EQUAL((int64_t)1000000007,
+                       downcast<Integer>(btDict->get("creationDate"))->i());
+}
+#endif // ENABLE_BITTORRENT
 
 void RpcMethodTest::testGatherProgressCommon()
 {
@@ -960,6 +996,8 @@ void RpcMethodTest::testGatherProgressCommon()
   }
 
   group->followedBy(followedBy.begin(), followedBy.end());
+  auto leader = GroupId::create();
+  group->following(leader->getNumericId());
   auto parent = GroupId::create();
   group->belongsTo(parent->getNumericId());
 
@@ -972,6 +1010,8 @@ void RpcMethodTest::testGatherProgressCommon()
                        downcast<String>(followedByRes->get(0))->s());
   CPPUNIT_ASSERT_EQUAL(GroupId::toHex(followedBy[1]->getGID()),
                        downcast<String>(followedByRes->get(1))->s());
+  CPPUNIT_ASSERT_EQUAL(leader->toHex(),
+                       downcast<String>(entry->get("following"))->s());
   CPPUNIT_ASSERT_EQUAL(parent->toHex(),
                        downcast<String>(entry->get("belongsTo"))->s());
   const List* files = downcast<List>(entry->get("files"));
@@ -980,8 +1020,10 @@ void RpcMethodTest::testGatherProgressCommon()
   CPPUNIT_ASSERT_EQUAL(std::string("aria2.tar.bz2"),
                        downcast<String>(file->get("path"))->s());
   CPPUNIT_ASSERT_EQUAL(
-      uris[0], downcast<String>(downcast<Dict>(downcast<List>(file->get("uris"))
-                                                   ->get(0))->get("uri"))->s());
+      uris[0],
+      downcast<String>(
+          downcast<Dict>(downcast<List>(file->get("uris"))->get(0))->get("uri"))
+          ->s());
   CPPUNIT_ASSERT_EQUAL(e_->getOption()->get(PREF_DIR),
                        downcast<String>(entry->get("dir"))->s());
 
@@ -1351,15 +1393,18 @@ void RpcMethodTest::testSystemMulticall()
   CPPUNIT_ASSERT_EQUAL(
       GroupId::toHex(getReservedGroup(rgman.get(), 1)->getGID()),
       downcast<String>(downcast<List>(resParams->get(1))->get(0))->s());
-  CPPUNIT_ASSERT_EQUAL((int64_t)1,
-                       downcast<Integer>(downcast<Dict>(resParams->get(2))
-                                             ->get("faultCode"))->i());
-  CPPUNIT_ASSERT_EQUAL((int64_t)1,
-                       downcast<Integer>(downcast<Dict>(resParams->get(3))
-                                             ->get("faultCode"))->i());
-  CPPUNIT_ASSERT_EQUAL((int64_t)1,
-                       downcast<Integer>(downcast<Dict>(resParams->get(4))
-                                             ->get("faultCode"))->i());
+  CPPUNIT_ASSERT_EQUAL(
+      (int64_t)1,
+      downcast<Integer>(downcast<Dict>(resParams->get(2))->get("faultCode"))
+          ->i());
+  CPPUNIT_ASSERT_EQUAL(
+      (int64_t)1,
+      downcast<Integer>(downcast<Dict>(resParams->get(3))->get("faultCode"))
+          ->i());
+  CPPUNIT_ASSERT_EQUAL(
+      (int64_t)1,
+      downcast<Integer>(downcast<Dict>(resParams->get(4))->get("faultCode"))
+          ->i());
   CPPUNIT_ASSERT(downcast<List>(resParams->get(5)));
   CPPUNIT_ASSERT(downcast<List>(resParams->get(6)));
 }
@@ -1379,6 +1424,24 @@ void RpcMethodTest::testSystemListMethods()
 
   const auto resParams = downcast<List>(res.param);
   auto& allNames = allMethodNames();
+
+  CPPUNIT_ASSERT_EQUAL(allNames.size(), resParams->size());
+
+  for (size_t i = 0; i < allNames.size(); ++i) {
+    const auto s = downcast<String>(resParams->get(i));
+    CPPUNIT_ASSERT(s);
+    CPPUNIT_ASSERT_EQUAL(allNames[i], s->s());
+  }
+}
+
+void RpcMethodTest::testSystemListNotifications()
+{
+  SystemListNotificationsRpcMethod m;
+  auto res = m.execute(createReq("system.listNotifications"), e_.get());
+  CPPUNIT_ASSERT_EQUAL(0, res.code);
+
+  const auto resParams = downcast<List>(res.param);
+  auto& allNames = allNotificationsNames();
 
   CPPUNIT_ASSERT_EQUAL(allNames.size(), resParams->size());
 

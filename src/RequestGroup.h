@@ -96,6 +96,9 @@ private:
 
   std::shared_ptr<Option> option_;
 
+  // options applied on restart
+  std::shared_ptr<Option> pendingOption_;
+
   std::shared_ptr<SegmentMan> segmentMan_;
 
   std::shared_ptr<DownloadContext> downloadContext_;
@@ -125,6 +128,10 @@ private:
   // has the GID of generated RequestGroups. empty list means there is
   // no such RequestGroup.
   std::vector<a2_gid_t> followedByGIDs_;
+  // This is a reverse link against followedByGIDs_.  For example, a
+  // download included in followedByGIDs_ has this download's GID in
+  // followingGID_.
+  a2_gid_t followingGID_;
 
   std::vector<const PreDownloadHandler*> preDownloadHandlers_;
 
@@ -174,6 +181,11 @@ private:
 
   bool pauseRequested_;
 
+  // restartRequested_ indicates that this download should be
+  // restarted.  Usually, it is used with pauseRequested_ to stop
+  // download first.
+  bool restartRequested_;
+
   // This flag just indicates that the downloaded file is not saved disk but
   // just sits in memory.
   bool inMemoryDownload_;
@@ -186,8 +198,6 @@ private:
   void initializePreDownloadHandler();
 
   void initializePostDownloadHandler();
-
-  void tryAutoFileRenaming();
 
   // Returns the result code of this RequestGroup.  If the download
   // finished, then returns error_code::FINISHED.  If the
@@ -206,6 +216,8 @@ public:
   ~RequestGroup();
 
   bool isCheckIntegrityReady();
+
+  void tryAutoFileRenaming();
 
   const std::shared_ptr<SegmentMan>& getSegmentMan() const
   {
@@ -341,6 +353,10 @@ public:
 
   bool isPauseRequested() const { return pauseRequested_; }
 
+  void setRestartRequested(bool f);
+
+  bool isRestartRequested() const { return restartRequested_; }
+
   void dependsOn(const std::shared_ptr<Dependency>& dep);
 
   bool isDependencyResolved();
@@ -455,6 +471,10 @@ public:
 
   const std::vector<a2_gid_t>& followedBy() const { return followedByGIDs_; }
 
+  void following(a2_gid_t gid) { followingGID_ = gid; }
+
+  a2_gid_t following() const { return followingGID_; }
+
   void belongsTo(a2_gid_t gid) { belongsToGID_ = gid; }
 
   a2_gid_t belongsTo() const { return belongsToGID_; }
@@ -489,6 +509,15 @@ public:
   bool isSeedOnlyEnabled() { return seedOnly_; }
 
   void enableSeedOnly();
+
+  // Returns true if this download is now seeding.
+  bool isSeeder() const;
+
+  void setPendingOption(std::shared_ptr<Option> option);
+  const std::shared_ptr<Option>& getPendingOption() const
+  {
+    return pendingOption_;
+  }
 };
 
 } // namespace aria2

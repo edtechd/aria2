@@ -547,7 +547,7 @@ bool parseLong(T& res, F f, const std::string& s, int base)
     return false;
   }
   if (*endptr != '\0') {
-    for (const char* i = endptr, * eoi = s.c_str() + s.size(); i < eoi; ++i) {
+    for (const char *i = endptr, *eoi = s.c_str() + s.size(); i < eoi; ++i) {
       if (!isspace(*i)) {
         return false;
       }
@@ -586,16 +586,41 @@ bool parseUIntNoThrow(uint32_t& res, const std::string& s, int base)
 
 bool parseLLIntNoThrow(int64_t& res, const std::string& s, int base)
 {
-  long long int t;
-  if (parseLong(t, strtoll, s, base) &&
-      t >= std::numeric_limits<int64_t>::min() &&
-      t <= std::numeric_limits<int64_t>::max()) {
+  int64_t t;
+  if (parseLong(t, strtoll, s, base)) {
     res = t;
     return true;
   }
   else {
     return false;
   }
+}
+
+bool parseDoubleNoThrow(double& res, const std::string& s)
+{
+  if (s.empty()) {
+    return false;
+  }
+
+  errno = 0;
+  char* endptr;
+  auto d = strtod(s.c_str(), &endptr);
+
+  if (errno == ERANGE) {
+    return false;
+  }
+
+  if (endptr != s.c_str() + s.size()) {
+    for (auto i = std::begin(s) + (endptr - s.c_str()); i != std::end(s); ++i) {
+      if (!isspace(*i)) {
+        return false;
+      }
+    }
+  }
+
+  res = d;
+
+  return true;
 }
 
 SegList<int> parseIntSegments(const std::string& src)
@@ -725,7 +750,7 @@ void parsePrioritizePieceRange(
 std::string iso8859p1ToUtf8(const char* src, size_t len)
 {
   std::string dest;
-  for (const char* p = src, * last = src + len; p != last; ++p) {
+  for (const char *p = src, *last = src + len; p != last; ++p) {
     unsigned char c = *p;
     if (0xa0u <= c) {
       if (c <= 0xbfu) {
@@ -785,31 +810,28 @@ static const uint8_t utf8d[] = {
      * The first part of the table maps bytes to character classes that
      * to reduce the size of the transition table and create bitmasks.
      */
-    0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
-    0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
-    0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
-    0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
-    0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
-    0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
-    0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  1,  1,  1,  1,
-    1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  9,  9,  9,  9,  9,  9,  9,  9,
-    9,  9,  9,  9,  9,  9,  9,  9,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,
-    7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,
-    7,  7,  8,  8,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,
-    2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  10, 3,  3,  3,
-    3,  3,  3,  3,  3,  3,  3,  3,  3,  4,  3,  3,  11, 6,  6,  6,  5,  8,  8,
-    8,  8,  8,  8,  8,  8,  8,  8,  8,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 9, 9, 9, 9, 9, 9,
+    9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+    7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 8, 8, 2, 2, 2, 2, 2, 2,
+    2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 10,
+    3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 3, 3, 11, 6, 6, 6, 5, 8, 8, 8, 8, 8,
+    8, 8, 8, 8, 8, 8,
 
     /*
      * The second part is a transition table that maps a combination
      * of a state of the automaton and a character class to a state.
      */
-    0,  12, 24, 36, 60, 96, 84, 12, 12, 12, 48, 72, 12, 12, 12, 12, 12, 12, 12,
-    12, 12, 12, 12, 12, 12, 0,  12, 12, 12, 12, 12, 0,  12, 0,  12, 12, 12, 24,
-    12, 12, 12, 12, 12, 24, 12, 24, 12, 12, 12, 12, 12, 12, 12, 12, 12, 24, 12,
-    12, 12, 12, 12, 24, 12, 12, 12, 12, 12, 12, 12, 24, 12, 12, 12, 12, 12, 12,
-    12, 12, 12, 36, 12, 36, 12, 12, 12, 36, 12, 12, 12, 12, 12, 36, 12, 36, 12,
-    12, 12, 36, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12,
+    0, 12, 24, 36, 60, 96, 84, 12, 12, 12, 48, 72, 12, 12, 12, 12, 12, 12, 12,
+    12, 12, 12, 12, 12, 12, 0, 12, 12, 12, 12, 12, 0, 12, 0, 12, 12, 12, 24, 12,
+    12, 12, 12, 12, 24, 12, 24, 12, 12, 12, 12, 12, 12, 12, 12, 12, 24, 12, 12,
+    12, 12, 12, 24, 12, 12, 12, 12, 12, 12, 12, 24, 12, 12, 12, 12, 12, 12, 12,
+    12, 12, 36, 12, 36, 12, 12, 12, 36, 12, 12, 12, 12, 12, 36, 12, 36, 12, 12,
+    12, 36, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12,
 };
 
 static uint32_t utf8dfa(uint32_t* state, uint32_t* codep, uint32_t byte)
@@ -859,8 +881,8 @@ ssize_t parse_content_disposition(char* dest, size_t destlen,
                                   const char** charsetp, size_t* charsetlenp,
                                   const char* in, size_t len)
 {
-  const char* p = in, * eop = in + len, * mark_first = nullptr,
-              * mark_last = nullptr;
+  const char *p = in, *eop = in + len, *mark_first = nullptr,
+             *mark_last = nullptr;
   int state = CD_BEFORE_DISPOSITION_TYPE;
   int in_file_parm = 0;
   int flags = 0;
@@ -1343,9 +1365,17 @@ void setGlobalSignalHandler(int sig, sigset_t* mask, signal_handler_t handler,
   sigact.sa_handler = handler;
   sigact.sa_flags = flags;
   sigact.sa_mask = *mask;
-  sigaction(sig, &sigact, nullptr);
+  if (sigaction(sig, &sigact, nullptr) == -1) {
+    auto errNum = errno;
+    A2_LOG_ERROR(fmt("sigaction() failed for signal %d: %s", sig,
+                     safeStrerror(errNum).c_str()));
+  }
 #else
-  signal(sig, handler);
+  if (signal(sig, handler) == SIG_ERR) {
+    auto errNum = errno;
+    A2_LOG_ERROR(fmt("signal() failed for signal %d: %s", sig,
+                     safeStrerror(errNum).c_str()));
+  }
 #endif // HAVE_SIGACTION
 }
 
@@ -1900,7 +1930,7 @@ void executeHook(const std::string& command, a2_gid_t gid, size_t numFiles,
   assert(cmdlineLen > 0);
   A2_LOG_INFO(fmt("Executing user command: %s", cmdline.c_str()));
   DWORD rc = CreateProcessW(batch ? utf8ToWChar(cmdexe).c_str() : nullptr,
-                            wcharCmdline.get(), nullptr, nullptr, true, 0,
+                            wcharCmdline.get(), nullptr, nullptr, false, 0,
                             nullptr, 0, &si, &pi);
 
   if (!rc) {
@@ -2087,7 +2117,6 @@ TLSVersion toTLSVersion(const std::string& ver)
 }
 #endif // ENABLE_SSL
 
-
 #ifdef __MINGW32__
 std::string formatLastError(int errNum)
 {
@@ -2102,6 +2131,96 @@ std::string formatLastError(int errNum)
   }
 
   return buf.data();
+}
+#endif // __MINGW32__
+
+void make_fd_cloexec(int fd)
+{
+#ifndef __MINGW32__
+  int flags;
+
+  // TODO from linux man page, fcntl() with F_GETFD or F_SETFD does
+  // not return -1 with errno == EINTR.  Historically, aria2 code base
+  // checks this case.  Probably, it is not needed.
+  while ((flags = fcntl(fd, F_GETFD)) == -1 && errno == EINTR)
+    ;
+  if (flags == -1) {
+    return;
+  }
+
+  while (fcntl(fd, F_SETFD, flags | FD_CLOEXEC) == -1 && errno == EINTR)
+    ;
+#endif // !__MINGW32__
+}
+
+#ifdef __MINGW32__
+bool gainPrivilege(LPCTSTR privName)
+{
+  LUID luid;
+  TOKEN_PRIVILEGES tp;
+
+  if (!LookupPrivilegeValue(nullptr, privName, &luid)) {
+    auto errNum = GetLastError();
+    A2_LOG_WARN(fmt("Lookup for privilege name %s failed. cause: %s", privName,
+                    util::formatLastError(errNum).c_str()));
+    return false;
+  }
+
+  tp.PrivilegeCount = 1;
+  tp.Privileges[0].Luid = luid;
+  tp.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
+
+  HANDLE token;
+  if (!OpenProcessToken(GetCurrentProcess(),
+                        TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY, &token)) {
+    auto errNum = GetLastError();
+    A2_LOG_WARN(fmt("Getting process token failed. cause: %s",
+                    util::formatLastError(errNum).c_str()));
+    return false;
+  }
+
+  auto tokenCloser = defer(token, CloseHandle);
+
+  if (!AdjustTokenPrivileges(token, FALSE, &tp, 0, NULL, NULL)) {
+    auto errNum = GetLastError();
+    A2_LOG_WARN(fmt("Gaining privilege %s failed. cause: %s", privName,
+                    util::formatLastError(errNum).c_str()));
+    return false;
+  }
+
+  // Check privilege was really gained
+  DWORD bufsize = 0;
+  GetTokenInformation(token, TokenPrivileges, nullptr, 0, &bufsize);
+  if (bufsize == 0) {
+    A2_LOG_WARN("Checking privilege failed.");
+    return false;
+  }
+
+  auto buf = make_unique<char[]>(bufsize);
+  if (!GetTokenInformation(token, TokenPrivileges, buf.get(), bufsize,
+                           &bufsize)) {
+    auto errNum = GetLastError();
+    A2_LOG_WARN(fmt("Checking privilege failed. cause: %s",
+                    util::formatLastError(errNum).c_str()));
+    return false;
+  }
+
+  auto privs = reinterpret_cast<TOKEN_PRIVILEGES*>(buf.get());
+  for (size_t i = 0; i < privs->PrivilegeCount; ++i) {
+    auto& priv = privs->Privileges[i];
+    if (memcmp(&priv.Luid, &luid, sizeof(luid)) != 0) {
+      continue;
+    }
+    if (priv.Attributes == SE_PRIVILEGE_ENABLED) {
+      return true;
+    }
+
+    break;
+  }
+
+  A2_LOG_WARN(fmt("Gaining privilege %s failed.", privName));
+
+  return false;
 }
 #endif // __MINGW32__
 

@@ -38,14 +38,14 @@ See `the online manual
 Notes
 -----
 
-aria2c executable was generated using android-ndk-r10d.
+aria2c executable was generated using android-ndk-r12b.
 
 The following libraries were statically linked.
 
-* openssl 1.0.2e
-* expat 2.1.0
-* c-ares 1.10.0
-* libssh2 1.6.0
+* openssl 1.0.2j
+* expat 2.2.0
+* c-ares 1.12.0
+* libssh2 1.7.0
 
 Since Android does not have ``/etc/resolv.conf``, c-ares (asynchronous
 DNS resolver) is disabled by default. But name resolution is sometimes

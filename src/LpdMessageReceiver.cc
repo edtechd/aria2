@@ -1,3 +1,4 @@
+/* <!-- copyright */
 /*
  * aria2 - The high speed download utility
  *
@@ -30,6 +31,8 @@
  * version.  If you delete this exception statement from all source
  * files in the program, then also delete it here.
  */
+/* copyright --> */
+
 #include "LpdMessageReceiver.h"
 #include "SocketCore.h"
 #include "Logger.h"
@@ -50,7 +53,7 @@ LpdMessageReceiver::LpdMessageReceiver(const std::string& multicastAddress,
 {
 }
 
-LpdMessageReceiver::~LpdMessageReceiver() {}
+LpdMessageReceiver::~LpdMessageReceiver() = default;
 
 bool LpdMessageReceiver::init(const std::string& localAddr)
 {

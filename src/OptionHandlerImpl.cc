@@ -43,6 +43,7 @@
 #include <sstream>
 #include <iterator>
 #include <vector>
+#include <stdexcept>
 
 #include "util.h"
 #include "DlAbortEx.h"
@@ -74,7 +75,7 @@ BooleanOptionHandler::BooleanOptionHandler(PrefPtr pref,
 {
 }
 
-BooleanOptionHandler::~BooleanOptionHandler() {}
+BooleanOptionHandler::~BooleanOptionHandler() = default;
 
 void BooleanOptionHandler::parseArg(Option& option,
                                     const std::string& optarg) const
@@ -110,7 +111,7 @@ IntegerRangeOptionHandler::IntegerRangeOptionHandler(
 {
 }
 
-IntegerRangeOptionHandler::~IntegerRangeOptionHandler() {}
+IntegerRangeOptionHandler::~IntegerRangeOptionHandler() = default;
 
 void IntegerRangeOptionHandler::parseArg(Option& option,
                                          const std::string& optarg) const
@@ -145,7 +146,7 @@ NumberOptionHandler::NumberOptionHandler(PrefPtr pref, const char* description,
 {
 }
 
-NumberOptionHandler::~NumberOptionHandler() {}
+NumberOptionHandler::~NumberOptionHandler() = default;
 
 void NumberOptionHandler::parseArg(Option& option,
                                    const std::string& optarg) const
@@ -209,7 +210,7 @@ UnitNumberOptionHandler::UnitNumberOptionHandler(
 {
 }
 
-UnitNumberOptionHandler::~UnitNumberOptionHandler() {}
+UnitNumberOptionHandler::~UnitNumberOptionHandler() = default;
 
 void UnitNumberOptionHandler::parseArg(Option& option,
                                        const std::string& optarg) const
@@ -228,7 +229,7 @@ FloatNumberOptionHandler::FloatNumberOptionHandler(
 {
 }
 
-FloatNumberOptionHandler::~FloatNumberOptionHandler() {}
+FloatNumberOptionHandler::~FloatNumberOptionHandler() = default;
 
 void FloatNumberOptionHandler::parseArg(Option& option,
                                         const std::string& optarg) const
@@ -286,7 +287,7 @@ DefaultOptionHandler::DefaultOptionHandler(
 {
 }
 
-DefaultOptionHandler::~DefaultOptionHandler() {}
+DefaultOptionHandler::~DefaultOptionHandler() = default;
 
 void DefaultOptionHandler::parseArg(Option& option,
                                     const std::string& optarg) const
@@ -315,7 +316,7 @@ CumulativeOptionHandler::CumulativeOptionHandler(
 {
 }
 
-CumulativeOptionHandler::~CumulativeOptionHandler() {}
+CumulativeOptionHandler::~CumulativeOptionHandler() = default;
 
 void CumulativeOptionHandler::parseArg(Option& option,
                                        const std::string& optarg) const
@@ -339,7 +340,7 @@ IndexOutOptionHandler::IndexOutOptionHandler(PrefPtr pref,
 {
 }
 
-IndexOutOptionHandler::~IndexOutOptionHandler() {}
+IndexOutOptionHandler::~IndexOutOptionHandler() = default;
 
 void IndexOutOptionHandler::parseArg(Option& option,
                                      const std::string& optarg) const
@@ -374,7 +375,7 @@ ChecksumOptionHandler::ChecksumOptionHandler(
 {
 }
 
-ChecksumOptionHandler::~ChecksumOptionHandler() {}
+ChecksumOptionHandler::~ChecksumOptionHandler() = default;
 
 void ChecksumOptionHandler::parseArg(Option& option,
                                      const std::string& optarg) const
@@ -410,7 +411,7 @@ ParameterOptionHandler::ParameterOptionHandler(
 {
 }
 
-ParameterOptionHandler::~ParameterOptionHandler() {}
+ParameterOptionHandler::~ParameterOptionHandler() = default;
 
 void ParameterOptionHandler::parseArg(Option& option,
                                       const std::string& optarg) const
@@ -456,7 +457,7 @@ HostPortOptionHandler::HostPortOptionHandler(
 {
 }
 
-HostPortOptionHandler::~HostPortOptionHandler() {}
+HostPortOptionHandler::~HostPortOptionHandler() = default;
 
 void HostPortOptionHandler::parseArg(Option& option,
                                      const std::string& optarg) const
@@ -495,7 +496,7 @@ HttpProxyOptionHandler::HttpProxyOptionHandler(PrefPtr pref,
 {
 }
 
-HttpProxyOptionHandler::~HttpProxyOptionHandler() {}
+HttpProxyOptionHandler::~HttpProxyOptionHandler() = default;
 
 void HttpProxyOptionHandler::parseArg(Option& option,
                                       const std::string& optarg) const
@@ -584,6 +585,66 @@ void PrioritizePieceOptionHandler::parseArg(Option& option,
 std::string PrioritizePieceOptionHandler::createPossibleValuesString() const
 {
   return "head[=SIZE], tail[=SIZE]";
+}
+
+OptimizeConcurrentDownloadsOptionHandler::
+    OptimizeConcurrentDownloadsOptionHandler(PrefPtr pref,
+                                             const char* description,
+                                             const std::string& defaultValue,
+                                             char shortName)
+    : AbstractOptionHandler(pref, description, defaultValue,
+                            OptionHandler::OPT_ARG, shortName)
+{
+}
+
+void OptimizeConcurrentDownloadsOptionHandler::parseArg(
+    Option& option, const std::string& optarg) const
+{
+  if (optarg == "true" || optarg.empty()) {
+    option.put(pref_, A2_V_TRUE);
+  }
+  else if (optarg == "false") {
+    option.put(pref_, A2_V_FALSE);
+  }
+  else {
+    auto p = util::divide(std::begin(optarg), std::end(optarg), ':');
+
+    std::string coeff_b(p.second.first, p.second.second);
+    if (coeff_b.empty()) {
+      std::string msg = pref_->k;
+      msg += " ";
+      msg += _("must be either 'true', 'false' or a pair numeric coefficients "
+               "A and B under the form 'A:B'.");
+      throw DL_ABORT_EX(msg);
+    }
+
+    std::string coeff_a(p.first.first, p.first.second);
+
+    PrefPtr pref = PREF_OPTIMIZE_CONCURRENT_DOWNLOADS_COEFFA;
+    std::string* sptr = &coeff_a;
+    for (;;) {
+      char* end;
+      errno = 0;
+      strtod(sptr->c_str(), &end);
+      if (errno != 0 || sptr->c_str() + sptr->size() != end) {
+        throw DL_ABORT_EX(fmt("Bad number '%s'", sptr->c_str()));
+      }
+      option.put(pref, *sptr);
+
+      if (pref == PREF_OPTIMIZE_CONCURRENT_DOWNLOADS_COEFFB) {
+        break;
+      }
+      pref = PREF_OPTIMIZE_CONCURRENT_DOWNLOADS_COEFFB;
+      sptr = &coeff_b;
+    }
+    option.put(pref_, A2_V_TRUE);
+  }
+}
+
+std::string
+OptimizeConcurrentDownloadsOptionHandler::createPossibleValuesString() const
+{
+  return "true, false, A:B";
 }
 
 DeprecatedOptionHandler::DeprecatedOptionHandler(

@@ -1,3 +1,4 @@
+/* <!-- copyright */
 /*
  * aria2 - The high speed download utility
  *
@@ -30,6 +31,8 @@
  * version.  If you delete this exception statement from all source
  * files in the program, then also delete it here.
  */
+/* copyright --> */
+
 #include "LpdMessage.h"
 #include "Peer.h"
 
@@ -43,6 +46,6 @@ LpdMessage::LpdMessage(const std::shared_ptr<Peer>& peer,
 {
 }
 
-LpdMessage::~LpdMessage() {}
+LpdMessage::~LpdMessage() = default;
 
 } // namespace aria2

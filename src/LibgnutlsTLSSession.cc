@@ -128,6 +128,9 @@ int GnuTLSSession::init(sock_t sockfd)
   // It seems err is not error message, but the argument string
   // which causes syntax error.
   const char* err;
+#ifdef USE_GNUTLS_SYSTEM_CRYPTO_POLICY
+  rv_ = gnutls_priority_set_direct(sslSession_, "@SYSTEM", &err);
+#else
   std::string pri = "SECURE128:+SIGN-RSA-SHA1";
   switch (tlsContext_->getMinTLSVersion()) {
   case TLS_PROTO_TLS12:
@@ -142,6 +145,7 @@ int GnuTLSSession::init(sock_t sockfd)
     break;
   };
   rv_ = gnutls_priority_set_direct(sslSession_, pri.c_str(), &err);
+#endif
   if (rv_ != GNUTLS_E_SUCCESS) {
     return TLS_ERR_ERROR;
   }
@@ -309,6 +313,17 @@ int GnuTLSSession::tlsConnect(const std::string& hostname, TLSVersion& version,
       ret = gnutls_x509_crt_get_subject_alt_name(cert, i, altName, &altNameLen,
                                                  nullptr);
       if (ret == GNUTLS_SAN_DNSNAME) {
+        if (altNameLen == 0) {
+          continue;
+        }
+
+        if (altName[altNameLen - 1] == '.') {
+          --altNameLen;
+          if (altNameLen == 0) {
+            continue;
+          }
+        }
+
         dnsNames.push_back(std::string(altName, altNameLen));
       }
       else if (ret == GNUTLS_SAN_IPADDRESS) {
@@ -319,7 +334,14 @@ int GnuTLSSession::tlsConnect(const std::string& hostname, TLSVersion& version,
     ret = gnutls_x509_crt_get_dn_by_oid(cert, GNUTLS_OID_X520_COMMON_NAME, 0, 0,
                                         altName, &altNameLen);
     if (ret == 0) {
-      commonName.assign(altName, altNameLen);
+      if (altNameLen > 0) {
+        if (altName[altNameLen - 1] == '.') {
+          --altNameLen;
+          if (altNameLen > 0) {
+            commonName.assign(altName, altNameLen);
+          }
+        }
+      }
     }
     if (!net::verifyHostname(hostname, dnsNames, ipAddrs, commonName)) {
       handshakeErr = "hostname does not match";

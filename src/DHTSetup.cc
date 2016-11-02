@@ -76,9 +76,9 @@
 
 namespace aria2 {
 
-DHTSetup::DHTSetup() {}
+DHTSetup::DHTSetup() = default;
 
-DHTSetup::~DHTSetup() {}
+DHTSetup::~DHTSetup() = default;
 
 std::pair<std::vector<std::unique_ptr<Command>>,
           std::vector<std::unique_ptr<Command>>>
@@ -180,6 +180,7 @@ DHTSetup::setup(DownloadEngine* e, int family)
     factory->setPeerAnnounceStorage(peerAnnounceStorage.get());
     factory->setTokenTracker(tokenTracker.get());
     factory->setLocalNode(localNode);
+    factory->setBtRegistry(e->getBtRegistry().get());
 
     PrefPtr prefEntryPointHost = family == AF_INET ? PREF_DHT_ENTRY_POINT_HOST
                                                    : PREF_DHT_ENTRY_POINT_HOST6;

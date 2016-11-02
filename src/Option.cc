@@ -46,12 +46,9 @@ Option::Option()
 {
 }
 
-Option::~Option() {}
+Option::~Option() = default;
 
-Option::Option(const Option& option)
-    : table_(option.table_), use_(option.use_), parent_(option.parent_)
-{
-}
+Option::Option(const Option& option) = default;
 
 Option& Option::operator=(const Option& option)
 {
@@ -189,5 +186,11 @@ void Option::setParent(const std::shared_ptr<Option>& parent)
 }
 
 const std::shared_ptr<Option>& Option::getParent() const { return parent_; }
+
+bool Option::emptyLocal() const
+{
+  size_t dst;
+  return !bitfield::getFirstSetBitIndex(dst, use_, use_.size() * 8);
+}
 
 } // namespace aria2

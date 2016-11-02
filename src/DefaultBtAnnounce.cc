@@ -74,7 +74,7 @@ DefaultBtAnnounce::DefaultBtAnnounce(DownloadContext* downloadContext,
 {
 }
 
-DefaultBtAnnounce::~DefaultBtAnnounce() {}
+DefaultBtAnnounce::~DefaultBtAnnounce() = default;
 
 bool DefaultBtAnnounce::isDefaultAnnounceReady()
 {
@@ -171,14 +171,15 @@ std::string DefaultBtAnnounce::getAnnounceUrl()
           "key=%s&"
           "numwant=%d&"
           "no_peer_id=1",
-          util::torrentPercentEncode(bittorrent::getInfoHash(downloadContext_),
-                                     INFO_HASH_LENGTH).c_str(),
-          util::torrentPercentEncode(bittorrent::getStaticPeerId(),
-                                     PEER_ID_LENGTH).c_str(),
+          util::percentEncode(bittorrent::getInfoHash(downloadContext_),
+                              INFO_HASH_LENGTH)
+              .c_str(),
+          util::percentEncode(bittorrent::getStaticPeerId(), PEER_ID_LENGTH)
+              .c_str(),
           stat.getSessionUploadLength(), stat.getSessionDownloadLength(), left,
-          util::torrentPercentEncode(bittorrent::getStaticPeerId() +
-                                         PEER_ID_LENGTH - keyLen,
-                                     keyLen).c_str(),
+          util::percentEncode(
+              bittorrent::getStaticPeerId() + PEER_ID_LENGTH - keyLen, keyLen)
+              .c_str(),
           numWant);
   if (tcpPort_) {
     uri += fmt("&port=%u", tcpPort_);
@@ -190,7 +191,7 @@ std::string DefaultBtAnnounce::getAnnounceUrl()
   }
   if (!trackerId_.empty()) {
     uri += "&trackerid=";
-    uri += util::torrentPercentEncode(trackerId_);
+    uri += util::percentEncode(trackerId_);
   }
   if (option_->getAsBool(PREF_BT_FORCE_ENCRYPTION) ||
       option_->getAsBool(PREF_BT_REQUIRE_CRYPTO)) {

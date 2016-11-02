@@ -53,25 +53,64 @@ namespace {
 std::vector<std::string> rpcMethodNames = {
     "aria2.addUri",
 #ifdef ENABLE_BITTORRENT
-    "aria2.addTorrent", "aria2.getPeers",
+    "aria2.addTorrent",
+    "aria2.getPeers",
 #endif // ENABLE_BITTORRENT
 #ifdef ENABLE_METALINK
     "aria2.addMetalink",
 #endif // ENABLE_METALINK
-    "aria2.remove", "aria2.pause", "aria2.forcePause", "aria2.pauseAll",
-    "aria2.forcePauseAll", "aria2.unpause", "aria2.unpauseAll",
-    "aria2.forceRemove", "aria2.changePosition", "aria2.tellStatus",
-    "aria2.getUris", "aria2.getFiles", "aria2.getServers", "aria2.tellActive",
-    "aria2.tellWaiting", "aria2.tellStopped", "aria2.getOption",
-    "aria2.changeUri", "aria2.changeOption", "aria2.getGlobalOption",
-    "aria2.changeGlobalOption", "aria2.purgeDownloadResult",
-    "aria2.removeDownloadResult", "aria2.getVersion", "aria2.getSessionInfo",
-    "aria2.shutdown", "aria2.forceShutdown", "aria2.getGlobalStat",
-    "aria2.saveSession", "system.multicall", "system.listMethods",
+    "aria2.remove",
+    "aria2.pause",
+    "aria2.forcePause",
+    "aria2.pauseAll",
+    "aria2.forcePauseAll",
+    "aria2.unpause",
+    "aria2.unpauseAll",
+    "aria2.forceRemove",
+    "aria2.changePosition",
+    "aria2.tellStatus",
+    "aria2.getUris",
+    "aria2.getFiles",
+    "aria2.getServers",
+    "aria2.tellActive",
+    "aria2.tellWaiting",
+    "aria2.tellStopped",
+    "aria2.getOption",
+    "aria2.changeUri",
+    "aria2.changeOption",
+    "aria2.getGlobalOption",
+    "aria2.changeGlobalOption",
+    "aria2.purgeDownloadResult",
+    "aria2.removeDownloadResult",
+    "aria2.getVersion",
+    "aria2.getSessionInfo",
+    "aria2.shutdown",
+    "aria2.forceShutdown",
+    "aria2.getGlobalStat",
+    "aria2.saveSession",
+    "system.multicall",
+    "system.listMethods",
+    "system.listNotifications",
 };
 } // namespace
 
 const std::vector<std::string>& allMethodNames() { return rpcMethodNames; }
+
+namespace {
+std::vector<std::string> rpcNotificationsNames = {
+    "aria2.onDownloadStart",      "aria2.onDownloadPause",
+    "aria2.onDownloadStop",       "aria2.onDownloadComplete",
+    "aria2.onDownloadError",
+#ifdef ENABLE_BITTORRENT
+    "aria2.onBtDownloadComplete",
+#endif // ENABLE_BITTORRENT
+};
+} // namespace
+
+const std::vector<std::string>& allNotificationsNames()
+{
+  return rpcNotificationsNames;
+}
 
 namespace {
 std::unique_ptr<RpcMethod> createMethod(const std::string& methodName)
@@ -218,6 +257,10 @@ std::unique_ptr<RpcMethod> createMethod(const std::string& methodName)
 
   if (methodName == SystemListMethodsRpcMethod::getMethodName()) {
     return make_unique<SystemListMethodsRpcMethod>();
+  }
+
+  if (methodName == SystemListNotificationsRpcMethod::getMethodName()) {
+    return make_unique<SystemListNotificationsRpcMethod>();
   }
 
   return nullptr;

@@ -46,7 +46,7 @@ NetStat::NetStat()
 {
 }
 
-NetStat::~NetStat() {}
+NetStat::~NetStat() = default;
 
 /**
  * Returns current download speed in byte per sec.
@@ -56,12 +56,22 @@ int NetStat::calculateDownloadSpeed()
   return downloadSpeed_.calculateSpeed();
 }
 
+int NetStat::calculateNewestDownloadSpeed(int seconds)
+{
+  return downloadSpeed_.calculateNewestSpeed(seconds);
+}
+
 int NetStat::calculateAvgDownloadSpeed()
 {
   return avgDownloadSpeed_ = downloadSpeed_.calculateAvgSpeed();
 }
 
 int NetStat::calculateUploadSpeed() { return uploadSpeed_.calculateSpeed(); }
+
+int NetStat::calculateNewestUploadSpeed(int seconds)
+{
+  return uploadSpeed_.calculateNewestSpeed(seconds);
+}
 
 int NetStat::calculateAvgUploadSpeed()
 {

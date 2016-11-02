@@ -300,6 +300,9 @@ error_code::Value option_processing(Option& op, bool standalone,
     showUsage("", oparser, global::cerr());
     return e.getErrorCode();
   }
+  if (standalone && op.getAsBool(PREF_STDERR)) {
+    global::redirectStdoutToStderr();
+  }
   if (standalone && !op.getAsBool(PREF_ENABLE_RPC) &&
 #ifdef ENABLE_BITTORRENT
       op.blank(PREF_TORRENT_FILE) &&
@@ -337,6 +340,7 @@ error_code::Value option_processing(Option& op, bool standalone,
                 "--save-session");
     op.remove(PREF_DEFERRED_INPUT);
   }
+
   return error_code::FINISHED;
 }
 

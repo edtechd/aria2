@@ -46,7 +46,7 @@ BtInterestedMessage::BtInterestedMessage()
 {
 }
 
-BtInterestedMessage::~BtInterestedMessage() {}
+BtInterestedMessage::~BtInterestedMessage() = default;
 
 std::unique_ptr<BtInterestedMessage>
 BtInterestedMessage::create(const unsigned char* data, size_t dataLength)
@@ -59,33 +59,14 @@ void BtInterestedMessage::doReceivedAction()
   if (isMetadataGetMode()) {
     return;
   }
-  getPeer()->peerInterested(true);
-  if (!getPeer()->amChoking()) {
+
+  auto& peer = getPeer();
+
+  peer->peerInterested(true);
+
+  if (peer->amChoking()) {
     peerStorage_->executeChoke();
   }
-}
-
-bool BtInterestedMessage::sendPredicate() const
-{
-  return !getPeer()->amInterested();
-}
-
-namespace {
-struct ThisProgressUpdate : public ProgressUpdate {
-  ThisProgressUpdate(std::shared_ptr<Peer> peer) : peer(std::move(peer)) {}
-  virtual void update(size_t length, bool complete) CXX11_OVERRIDE
-  {
-    if (complete) {
-      peer->amInterested(true);
-    }
-  }
-  std::shared_ptr<Peer> peer;
-};
-} // namespace
-
-std::unique_ptr<ProgressUpdate> BtInterestedMessage::getProgressUpdate()
-{
-  return make_unique<ThisProgressUpdate>(getPeer());
 }
 
 void BtInterestedMessage::setPeerStorage(PeerStorage* peerStorage)

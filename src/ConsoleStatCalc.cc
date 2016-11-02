@@ -106,10 +106,7 @@ void printSizeProgress(ColorizedStream& o,
                        const SizeFormatter& sizeFormatter)
 {
 #ifdef ENABLE_BITTORRENT
-  if (rg->getDownloadContext()->hasAttribute(CTX_ATTR_BT) &&
-      !bittorrent::getTorrentAttrs(rg->getDownloadContext())
-           ->metadata.empty() &&
-      rg->downloadFinished()) {
+  if (rg->isSeeder()) {
     o << "SEED(";
     if (rg->getCompletedLength() > 0) {
       std::streamsize oldprec = o.precision();
@@ -128,7 +125,9 @@ void printSizeProgress(ColorizedStream& o,
     o << sizeFormatter(rg->getCompletedLength()) << "B/"
       << sizeFormatter(rg->getTotalLength()) << "B";
     if (rg->getTotalLength() > 0) {
-      o << "(" << 100 * rg->getCompletedLength() / rg->getTotalLength() << "%)";
+      o << colors::cyan << "("
+        << 100 * rg->getCompletedLength() / rg->getTotalLength() << "%)";
+      o << colors::clear;
     }
   }
 }
@@ -142,11 +141,12 @@ void printProgressCompact(ColorizedStream& o, const DownloadEngine* e,
     NetStat& netstat = e->getRequestGroupMan()->getNetStat();
     int dl = netstat.calculateDownloadSpeed();
     int ul = netstat.calculateUploadSpeed();
-    o << "[DL:" << colors::green << sizeFormatter(dl) << "B" << colors::clear;
+    o << colors::magenta << "[" << colors::clear << "DL:" << colors::green
+      << sizeFormatter(dl) << "B" << colors::clear;
     if (ul) {
       o << " UL:" << colors::cyan << sizeFormatter(ul) << "B" << colors::clear;
     }
-    o << "]";
+    o << colors::magenta << "]" << colors::clear;
   }
 
   const RequestGroupList& groups = e->getRequestGroupMan()->getRequestGroups();
@@ -156,9 +156,10 @@ void printProgressCompact(ColorizedStream& o, const DownloadEngine* e,
        ++i, ++cnt) {
     const std::shared_ptr<RequestGroup>& rg = *i;
     TransferStat stat = rg->calculateStat();
-    o << "[#" << GroupId::toAbbrevHex(rg->getGID()) << " ";
+    o << colors::magenta << "[" << colors::clear << "#"
+      << GroupId::toAbbrevHex(rg->getGID()) << " ";
     printSizeProgress(o, rg, stat, sizeFormatter);
-    o << "]";
+    o << colors::magenta << "]" << colors::clear;
   }
   if (cnt < groups.size()) {
     o << "(+" << groups.size() - cnt << ")";
@@ -176,7 +177,8 @@ void printProgress(ColorizedStream& o, const std::shared_ptr<RequestGroup>& rg,
     eta =
         (rg->getTotalLength() - rg->getCompletedLength()) / stat.downloadSpeed;
   }
-  o << "[#" << GroupId::toAbbrevHex(rg->getGID()) << " ";
+  o << colors::magenta << "[" << colors::clear << "#"
+    << GroupId::toAbbrevHex(rg->getGID()) << " ";
   printSizeProgress(o, rg, stat, sizeFormatter);
   o << " CN:" << rg->getNumConnection();
 #ifdef ENABLE_BITTORRENT
@@ -199,7 +201,7 @@ void printProgress(ColorizedStream& o, const std::shared_ptr<RequestGroup>& rg,
   if (eta > 0) {
     o << " ETA:" << colors::yellow << util::secfmt(eta) << colors::clear;
   }
-  o << "]";
+  o << colors::magenta << "]" << colors::clear;
 }
 
 void printProgressOut(ColorizedStream& o, const std::shared_ptr<RequestGroup>& rg,
@@ -338,9 +340,9 @@ void printProgressSummary(const RequestGroupList& groups, size_t cols,
       o << " as of " << buf;
     }
   }
-  o << " *** \n" << std::setfill(SEP_CHAR) << std::setw(cols) << SEP_CHAR
-    << "\n";
-  
+  o << " *** \n"
+    << std::setfill(SEP_CHAR) << std::setw(cols) << SEP_CHAR << "\n";
+
   global::cout()->write(o.str().c_str());
   std::for_each(groups.begin(), groups.end(),
                 PrintSummary(cols, e, sizeFormatter));

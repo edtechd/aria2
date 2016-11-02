@@ -72,7 +72,7 @@ DownloadContext::DownloadContext(int32_t pieceLength, int64_t totalLength,
       std::make_shared<FileEntry>(std::move(path), totalLength, 0));
 }
 
-DownloadContext::~DownloadContext() {}
+DownloadContext::~DownloadContext() = default;
 
 void DownloadContext::resetDownloadStartTime()
 {
@@ -153,30 +153,35 @@ void DownloadContext::setFileFilter(SegList<int> sgl)
 }
 
 void DownloadContext::setAttribute(ContextAttributeType key,
-                                   std::unique_ptr<ContextAttribute> value)
+                                   std::shared_ptr<ContextAttribute> value)
 {
   assert(key < MAX_CTX_ATTR);
   attrs_[key] = std::move(value);
 }
 
-const std::unique_ptr<ContextAttribute>&
+const std::shared_ptr<ContextAttribute>&
 DownloadContext::getAttribute(ContextAttributeType key)
 {
   assert(key < MAX_CTX_ATTR);
-  const std::unique_ptr<ContextAttribute>& attr = attrs_[key];
-  if (attr) {
-    return attr;
-  }
-  else {
+  const auto& attr = attrs_[key];
+  if (!attr) {
     throw DL_ABORT_EX(
         fmt("No attribute named %s", strContextAttributeType(key)));
   }
+
+  return attr;
 }
 
 bool DownloadContext::hasAttribute(ContextAttributeType key) const
 {
   assert(key < MAX_CTX_ATTR);
   return attrs_[key].get();
+}
+
+const std::vector<std::shared_ptr<ContextAttribute>>&
+DownloadContext::getAttributes() const
+{
+  return attrs_;
 }
 
 void DownloadContext::releaseRuntimeResource()

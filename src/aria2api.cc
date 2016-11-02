@@ -73,7 +73,7 @@ Session::Session(const KeyVals& options)
 {
 }
 
-Session::~Session() {}
+Session::~Session() = default;
 
 SessionConfig::SessionConfig()
     : keepRunning(false),
@@ -660,7 +660,7 @@ struct RequestGroupDH : public DownloadHandle {
       : group(group), ts(group->calculateStat())
   {
   }
-  virtual ~RequestGroupDH() {}
+  virtual ~RequestGroupDH() = default;
   virtual DownloadStatus getStatus() CXX11_OVERRIDE
   {
     if (group->getState() == RequestGroup::STATE_ACTIVE) {
@@ -727,6 +727,7 @@ struct RequestGroupDH : public DownloadHandle {
   {
     return group->followedBy();
   }
+  virtual A2Gid getFollowing() CXX11_OVERRIDE { return group->following(); }
   virtual A2Gid getBelongsTo() CXX11_OVERRIDE { return group->belongsTo(); }
   virtual const std::string& getDir() CXX11_OVERRIDE
   {
@@ -795,7 +796,7 @@ struct RequestGroupDH : public DownloadHandle {
 namespace {
 struct DownloadResultDH : public DownloadHandle {
   DownloadResultDH(std::shared_ptr<DownloadResult> dr) : dr(std::move(dr)) {}
-  virtual ~DownloadResultDH() {}
+  virtual ~DownloadResultDH() = default;
   virtual DownloadStatus getStatus() CXX11_OVERRIDE
   {
     switch (dr->result) {
@@ -828,6 +829,7 @@ struct DownloadResultDH : public DownloadHandle {
   {
     return dr->followedBy;
   }
+  virtual A2Gid getFollowing() CXX11_OVERRIDE { return dr->following; }
   virtual A2Gid getBelongsTo() CXX11_OVERRIDE { return dr->belongsTo; }
   virtual const std::string& getDir() CXX11_OVERRIDE { return dr->dir; }
   virtual std::vector<FileData> getFiles() CXX11_OVERRIDE

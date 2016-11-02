@@ -77,8 +77,9 @@ void CookieStorageTest::testStore()
   CPPUNIT_ASSERT_EQUAL((size_t)1, st.size());
   CPPUNIT_ASSERT(st.contains(*goodCookie()));
 
-  auto anotherCookie =
-      []() { return createCookie("k", "v", "mirror", true, "/", true); };
+  auto anotherCookie = []() {
+    return createCookie("k", "v", "mirror", true, "/", true);
+  };
   CPPUNIT_ASSERT(st.store(anotherCookie(), now));
   CPPUNIT_ASSERT_EQUAL((size_t)2, st.size());
   CPPUNIT_ASSERT(st.contains(*anotherCookie()));
@@ -107,8 +108,9 @@ void CookieStorageTest::testStore()
   CPPUNIT_ASSERT_EQUAL((size_t)1, st.size());
   CPPUNIT_ASSERT(st.contains(*anotherCookie()));
 
-  auto fromNumericHost =
-      []() { return createCookie("k", "v", "192.168.1.1", true, "/", false); };
+  auto fromNumericHost = []() {
+    return createCookie("k", "v", "192.168.1.1", true, "/", false);
+  };
   CPPUNIT_ASSERT(st.store(fromNumericHost(), now));
   CPPUNIT_ASSERT_EQUAL((size_t)2, st.size());
   CPPUNIT_ASSERT(st.contains(*fromNumericHost()));
@@ -328,10 +330,10 @@ void CookieStorageTest::testLoad()
   c = cookies[3];
   CPPUNIT_ASSERT_EQUAL(std::string("TAX"), c->getName());
   CPPUNIT_ASSERT_EQUAL(std::string("1000"), c->getValue());
-  CPPUNIT_ASSERT((time_t)INT32_MAX <= c->getExpiryTime());
+  CPPUNIT_ASSERT_EQUAL((time_t)1463304912, c->getExpiryTime());
   CPPUNIT_ASSERT(c->getPersistent());
   CPPUNIT_ASSERT_EQUAL(std::string("/"), c->getPath());
-  CPPUNIT_ASSERT_EQUAL(std::string("overflow"), c->getDomain());
+  CPPUNIT_ASSERT_EQUAL(std::string("something"), c->getDomain());
   CPPUNIT_ASSERT(!c->getSecure());
 }
 

@@ -38,9 +38,10 @@
 #define TEXT_DIR                                                        \
   _(" -d, --dir=DIR                The directory to store the downloaded file.")
 #define TEXT_OUT                                                        \
-  _(" -o, --out=FILE               The file name of the downloaded file. When \n" \
-    "                              the -Z option is used, this option will be \n" \
-    "                              ignored.")
+  _(" -o, --out=FILE               The file name of the downloaded file. It is\n" \
+    "                              always relative to the directory given in -d\n" \
+    "                              option. When the -Z option is used, this option\n" \
+    "                              will be ignored.")
 #define TEXT_LOG                                                        \
   _(" -l, --log=LOG                The file name of the log file. If '-' is\n" \
     "                              specified, log is written to stdout.")
@@ -174,7 +175,8 @@
     "                              exists. This option works only in http(s)/ftp\n" \
     "                              download.\n"                         \
     "                              The new file name has a dot and a number(1..9999)\n" \
-    "                              appended.")
+    "                              appended after the name, but before the file\n" \
+    "                              extension, if any.")
 #define TEXT_PARAMETERIZED_URI                                          \
   _(" -P, --parameterized-uri[=true|false] Enable parameterized URI support.\n" \
     "                              You can specify set of parts:\n"     \
@@ -242,7 +244,22 @@
 #define TEXT_MAX_CONCURRENT_DOWNLOADS                                   \
   _(" -j, --max-concurrent-downloads=N Set maximum number of parallel downloads for\n" \
     "                              every static (HTTP/FTP) URL, torrent and metalink.\n" \
-    "                              See also --split option.")
+    "                              See also --split and --optimize-concurrent-downloads options.")
+#define TEXT_OPTIMIZE_CONCURRENT_DOWNLOADS\
+  _(" --optimize-concurrent-downloads[=true|false|A:B] Optimizes the number of\n" \
+    "                              concurrent downloads according to the bandwidth\n" \
+    "                              available. aria2 uses the download speed observed\n" \
+    "                              in the previous downloads to adapt the number of\n" \
+    "                              downloads launched in parallel according to the\n" \
+    "                              rule N = A + B Log10(speed in Mbps). The\n" \
+    "                              coefficients A and B can be customized in the\n" \
+    "                              option arguments with A and B separated by a\n" \
+    "                              colon. The default values (A=5,B=25) lead to\n" \
+    "                              using typically 5 parallel downloads on 1Mbps\n" \
+    "                              networks and above 50 on 100Mbps networks. The\n" \
+    "                              number of parallel downloads remains constrained\n" \
+    "                              under the maximum defined by the\n" \
+    "                              max-concurrent-downloads parameter.")
 #define TEXT_LOAD_COOKIES                                               \
   _(" --load-cookies=FILE          Load Cookies from FILE using the Firefox3 format\n" \
     "                              and Mozilla/Firefox(1.x/2.x)/Netscape format.")
@@ -297,8 +314,8 @@
     "                              To limit the overall upload speed, use\n" \
     "                              --max-overall-upload-limit option.")
 #define TEXT_SEED_TIME                                                  \
-  _(" --seed-time=MINUTES          Specify seeding time in minutes. Also see the\n" \
-    "                              --seed-ratio option.")
+  _(" --seed-time=MINUTES          Specify seeding time in (fractional) minutes.\n" \
+    "                              Also see the --seed-ratio option.")
 #define TEXT_SEED_RATIO                                                 \
   _(" --seed-ratio=RATIO           Specify share ratio. Seed completed torrents\n" \
     "                              until share ratio reaches RATIO.\n"  \
@@ -523,9 +540,13 @@
 #define TEXT_EVENT_POLL                                                 \
   _(" --event-poll=POLL            Specify the method for polling events.")
 #define TEXT_BT_EXTERNAL_IP                                             \
-  _(" --bt-external-ip=IPADDRESS   Specify the external IP address to report to a\n" \
-    "                              BitTorrent tracker. Although this function is\n" \
-    "                              named 'external', it can accept any kind of IP\n" \
+  _(" --bt-external-ip=IPADDRESS   Specify the external IP address to use in\n" \
+    "                              BitTorrent download and DHT. It may be sent to\n" \
+    "                              BitTorrent tracker. For DHT, this option should\n" \
+    "                              be set to report that local node is downloading\n" \
+    "                              a particular torrent. This is critical to use\n" \
+    "                              DHT in a private network. Although this function\n" \
+    "                              is named 'external', it can accept any kind of IP\n" \
     "                              addresses.")
 #define TEXT_HTTP_AUTH_CHALLENGE                                        \
   _(" --http-auth-challenge[=true|false] Send HTTP authorization header only when it\n" \
@@ -564,7 +585,7 @@
 #define TEXT_ON_DOWNLOAD_START                                          \
   _(" --on-download-start=COMMAND  Set the command to be executed after download\n" \
     "                              got started. aria2 passes 3 arguments to COMMAND:\n" \
-    "                              GID, the nubmer of files and file path. See Event\n" \
+    "                              GID, the number of files and file path. See Event\n" \
     "                              Hook in man page for more details.")
 #define TEXT_ON_DOWNLOAD_PAUSE                                          \
   _(" --on-download-pause=COMMAND  Set the command to be executed after download\n" \
@@ -774,7 +795,10 @@
     "                              is pushed to the back. Setting big number in this\n" \
     "                              option may result high memory consumption after\n" \
     "                              thousands of downloads. Specifying 0 means no\n" \
-    "                              download result is kept.")
+    "                              download result is kept. Note that unfinished\n" \
+    "                              downloads are kept in memory regardless of this\n" \
+    "                              option value. See\n" \
+    "                              --keep-unfinished-download-result option.")
 #define TEXT_ASYNC_DNS_SERVER                   \
   _(" --async-dns-server=IPADDRESS[,...] Comma separated list of DNS server address\n" \
     "                              used in asynchronous DNS resolver. Usually\n" \
@@ -836,6 +860,9 @@
     "                              --min-split-size option, so it will be necessary\n" \
     "                              to specify a reasonable value to\n"  \
     "                              --min-split-size option.\n"          \
+    "                              If 'random' is given, aria2 selects piece\n" \
+    "                              randomly. Like 'inorder', --min-split-size\n" \
+    "                              option is honored.\n"                \
     "                              If 'geom' is given, at the beginning aria2\n" \
     "                              selects piece which has minimum index like\n" \
     "                              'inorder', but it exponentially increasingly\n" \
@@ -864,7 +891,8 @@
     "                              download speed, percentage of progress and\n" \
     "                              path/URI. The percentage of progress and\n" \
     "                              path/URI are printed for each requested file in\n" \
-    "                              each row.")
+    "                              each row.\n" \
+    "                              If OPT is 'hide', \"Download Results\" is hidden.")
 #define TEXT_HASH_CHECK_ONLY                    \
   _(" --hash-check-only[=true|false] If true is given, after hash check using\n" \
     "                              --check-integrity option, abort download whether\n" \
@@ -946,6 +974,11 @@
     "                              situations. This may be useful to save\n" \
     "                              BitTorrent seeding which is recognized as\n" \
     "                              completed state.")
+#define TEXT_SAVE_NOT_FOUND                         \
+  _(" --save-not-found[=true|false] Save download with --save-session option even\n" \
+    "                              if the file was not found on the server. This\n" \
+    "                              option also saves control file in that\n" \
+    "                              situations.")
 #define TEXT_DISK_CACHE                         \
   _(" --disk-cache=SIZE            Enable disk cache. If SIZE is 0, the disk cache\n" \
     "                              is disabled. This feature caches the downloaded\n" \
@@ -1047,7 +1080,7 @@
 #define TEXT_SOCKET_RECV_BUFFER_SIZE                                    \
   _(" --socket-recv-buffer-size=SIZE\n"                                 \
     "                              Set the maximum socket receive buffer in bytes.\n" \
-    "                              Specifing 0 will disable this option. This value\n" \
+    "                              Specifying 0 will disable this option. This value\n" \
     "                              will be set to socket file descriptor using\n" \
     "                              SO_RCVBUF socket option with setsockopt() call.")
 #define TEXT_BT_ENABLE_HOOK_AFTER_HASH_CHECK                            \
@@ -1066,5 +1099,17 @@
     "                              size of those files. If file size is strictly\n" \
     "                              greater than the size specified in this option,\n" \
     "                              mmap will be disabled.")
+#define TEXT_STDERR \
+  _(" --stderr[=true|false]        Redirect all console output that would be\n" \
+    "                              otherwise printed in stdout to stderr.")
+#define TEXT_KEEP_UNFINISHED_DOWNLOAD_RESULT \
+  _(" --keep-unfinished-download-result[=true|false]\n" \
+    "                              Keep unfinished download results even if doing\n" \
+    "                              so exceeds --max-download-result. This is useful\n" \
+    "                              if all unfinished downloads must be saved in\n" \
+    "                              session file (see --save-session option). Please\n" \
+    "                              keep in mind that there is no upper bound to the\n" \
+    "                              number of unfinished download result to keep. If\n" \
+    "                              that is undesirable, turn this option off.")
 
 // clang-format on

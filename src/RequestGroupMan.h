@@ -71,8 +71,18 @@ private:
   RequestGroupList requestGroups_;
   RequestGroupList reservedGroups_;
   DownloadResultList downloadResults_;
+  // This includes download result which did not finish, and deleted
+  // from downloadResults_.  This is used to save them in
+  // SessionSerializer.
+  std::vector<std::shared_ptr<DownloadResult>> unfinishedDownloadResults_;
 
-  int maxSimultaneousDownloads_;
+  int maxConcurrentDownloads_;
+
+  bool optimizeConcurrentDownloads_;
+  double optimizeConcurrentDownloadsCoeffA_;
+  double optimizeConcurrentDownloadsCoeffB_;
+  int optimizationSpeed_;
+  Timer optimizationSpeedTimer_;
 
   // The number of simultaneous active downloads, excluding seed only
   // item if PREF_BT_DETACH_SEED_ONLY is true.  We rely on this
@@ -135,9 +145,11 @@ private:
   void addRequestGroupIndex(
       const std::vector<std::shared_ptr<RequestGroup>>& groups);
 
+  int optimizeConcurrentDownloads();
+
 public:
   RequestGroupMan(std::vector<std::shared_ptr<RequestGroup>> requestGroups,
-                  int maxSimultaneousDownloads, const Option* option);
+                  int maxConcurrentDownloads, const Option* option);
 
   ~RequestGroupMan();
 
@@ -195,6 +207,13 @@ public:
 
   bool removeReservedGroup(a2_gid_t gid);
 
+  bool getOptimizeConcurrentDownloads() const
+  {
+    return optimizeConcurrentDownloads_;
+  }
+
+  bool setupOptimizeConcurrentDownloads();
+
   void showDownloadResults(OutputFile& o, bool full) const;
 
   bool isSameFileBeingDownloaded(RequestGroup* requestGroup) const;
@@ -246,6 +265,12 @@ public:
 
   void addDownloadResult(const std::shared_ptr<DownloadResult>& downloadResult);
 
+  const std::vector<std::shared_ptr<DownloadResult>>&
+  getUnfinishedDownloadResult() const
+  {
+    return unfinishedDownloadResults_;
+  }
+
   std::shared_ptr<ServerStat> findServerStat(const std::string& hostname,
                                              const std::string& protocol) const;
 
@@ -291,7 +316,7 @@ public:
     return maxOverallUploadSpeedLimit_;
   }
 
-  void setMaxSimultaneousDownloads(int max) { maxSimultaneousDownloads_ = max; }
+  void setMaxConcurrentDownloads(int max) { maxConcurrentDownloads_ = max; }
 
   // Call this function if requestGroups_ queue should be maintained.
   // This function is added to reduce the call of maintenance, but at

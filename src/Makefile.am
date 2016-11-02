@@ -140,6 +140,7 @@ SRCS =  \
 	InitiateConnectionCommand.cc InitiateConnectionCommand.h\
 	InitiateConnectionCommandFactory.cc InitiateConnectionCommandFactory.h\
 	InorderStreamPieceSelector.cc InorderStreamPieceSelector.h\
+	RandomStreamPieceSelector.cc RandomStreamPieceSelector.h\
 	InorderURISelector.cc InorderURISelector.h\
 	IOFile.cc IOFile.h\
 	IteratableChecksumValidator.cc IteratableChecksumValidator.h\
@@ -269,25 +270,12 @@ SRCS =  \
 	XmlRpcRequestParserController.cc XmlRpcRequestParserController.h\
 	OpenedFileCounter.cc OpenedFileCounter.h \
 	SHA1IOFile.cc SHA1IOFile.h \
-	EvictSocketPoolCommand.cc EvictSocketPoolCommand.h
+	EvictSocketPoolCommand.cc EvictSocketPoolCommand.h\
+	libssl_compat.h
 
 if ANDROID
 SRCS += android/android.c
 endif # ANDROID
-
-# Android NDK R8e does not provide ftruncate64. Use assembly code from
-# android source code and link it.
-if ANDROID_ARM
-SRCS += android/arm-ftruncate64.S
-endif # ANDROID_ARM
-
-if ANDROID_MIPS
-SRCS += android/mips-ftruncate64.S
-endif # ANDROID_MIPS
-
-if ANDROID_X86
-SRCS += android/x86-ftruncate64.S android/x86-asm.h
-endif # ANDROID_X86
 
 if MINGW_BUILD
 SRCS += WinConsoleFile.cc WinConsoleFile.h
@@ -715,7 +703,6 @@ endif # !ENABLE_LIBARIA2
 
 libaria2_la_SOURCES = $(SRCS)
 
-libaria2_la_LIBADD = @WSLAY_LIBS@ @LTLIBINTL@
 
 AM_CPPFLAGS = \
 	-I$(top_srcdir)/lib -I$(top_srcdir)/intl\
@@ -742,7 +729,7 @@ AM_LDFLAGS = \
 	@EXTRALDFLAGS@ \
 	@APPLETLS_LDFLAGS@
 
-LDADD = libaria2.la @ALLOCA@ \
+EXTLDADD = @ALLOCA@ \
 	@EXTRALIBS@ \
 	@ZLIB_LIBS@ \
 	@LIBUV_LIBS@ \
@@ -759,9 +746,18 @@ LDADD = libaria2.la @ALLOCA@ \
 	@LIBCARES_LIBS@ \
 	@WSLAY_LIBS@ \
 	@TCMALLOC_LIBS@ \
-	@JEMALLOC_LIBS@
+	@JEMALLOC_LIBS@ \
+	@LTLIBINTL@
+
+LDADD = libaria2.la
+
+if ENABLE_LIBARIA2
+libaria2_la_LIBADD = $(EXTLDADD)
+else # !ENABLE_LIBARIA2
+LDADD += $(EXTLDADD)
+endif # !ENABLE_LIBARIA2
 
 AM_CFLAGS = @EXTRACFLAGS@
 
-AM_CXXFLAGS = @WARNCXXFLAGS@ @EXTRACXXFLAGS@
+AM_CXXFLAGS = @WARNCXXFLAGS@ @CXX1XCXXFLAGS@ @EXTRACXXFLAGS@
 

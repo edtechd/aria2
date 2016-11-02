@@ -235,9 +235,9 @@ std::vector<OptionHandler*> OptionHandlerFactory::createOptionHandlers()
     handlers.push_back(op);
   }
   {
-    OptionHandler* op(
-        new ParameterOptionHandler(PREF_DOWNLOAD_RESULT, TEXT_DOWNLOAD_RESULT,
-                                   A2_V_DEFAULT, {A2_V_DEFAULT, A2_V_FULL}));
+    OptionHandler* op(new ParameterOptionHandler(
+        PREF_DOWNLOAD_RESULT, TEXT_DOWNLOAD_RESULT, A2_V_DEFAULT,
+        {A2_V_DEFAULT, A2_V_FULL, A2_V_HIDE}));
     op->addTag(TAG_ADVANCED);
     op->setChangeGlobalOption(true);
     handlers.push_back(op);
@@ -299,21 +299,21 @@ std::vector<OptionHandler*> OptionHandlerFactory::createOptionHandlers()
 #endif // defined(HAVE_EPOLL)
                                                  {
 #ifdef HAVE_EPOLL
-                                                  V_EPOLL,
+                                                     V_EPOLL,
 #endif // HAVE_EPOLL
 #ifdef HAVE_KQUEUE
-                                                  V_KQUEUE,
+                                                     V_KQUEUE,
 #endif // HAVE_KQUEUE
 #ifdef HAVE_PORT_ASSOCIATE
-                                                  V_PORT,
+                                                     V_PORT,
 #endif // HAVE_PORT_ASSOCIATE
 #ifdef HAVE_LIBUV
-                                                  V_LIBUV,
+                                                     V_LIBUV,
 #endif // HAVE_LIBUV
 #ifdef HAVE_POLL
-                                                  V_POLL,
+                                                     V_POLL,
 #endif // HAVE_POLL
-                                                  V_SELECT}));
+                                                     V_SELECT}));
     op->addTag(TAG_ADVANCED);
     handlers.push_back(op);
   }
@@ -336,6 +336,17 @@ std::vector<OptionHandler*> OptionHandlerFactory::createOptionHandlers()
   {
     OptionHandler* op(new BooleanOptionHandler(
         PREF_FORCE_SAVE, TEXT_FORCE_SAVE, A2_V_FALSE, OptionHandler::OPT_ARG));
+    op->addTag(TAG_ADVANCED);
+    op->setInitialOption(true);
+    op->setChangeOption(true);
+    op->setChangeGlobalOption(true);
+    op->setChangeOptionForReserved(true);
+    handlers.push_back(op);
+  }
+  {
+    OptionHandler* op(new BooleanOptionHandler(PREF_SAVE_NOT_FOUND,
+                                               TEXT_SAVE_NOT_FOUND, A2_V_TRUE,
+                                               OptionHandler::OPT_ARG));
     op->addTag(TAG_ADVANCED);
     op->setInitialOption(true);
     op->setChangeOption(true);
@@ -390,6 +401,15 @@ std::vector<OptionHandler*> OptionHandlerFactory::createOptionHandlers()
         PREF_INTERFACE, TEXT_INTERFACE, NO_DEFAULT_VALUE,
         "interface, IP address, hostname", OptionHandler::REQ_ARG));
     op->addTag(TAG_ADVANCED);
+    handlers.push_back(op);
+  }
+  {
+    OptionHandler* op(
+        new BooleanOptionHandler(PREF_KEEP_UNFINISHED_DOWNLOAD_RESULT,
+                                 TEXT_KEEP_UNFINISHED_DOWNLOAD_RESULT,
+                                 A2_V_TRUE, OptionHandler::OPT_ARG));
+    op->addTag(TAG_ADVANCED);
+    op->setChangeGlobalOption(true);
     handlers.push_back(op);
   }
   {
@@ -562,6 +582,14 @@ std::vector<OptionHandler*> OptionHandlerFactory::createOptionHandlers()
     handlers.push_back(op);
   }
   {
+    OptionHandler* op(new OptimizeConcurrentDownloadsOptionHandler(
+        PREF_OPTIMIZE_CONCURRENT_DOWNLOADS, TEXT_OPTIMIZE_CONCURRENT_DOWNLOADS,
+        A2_V_FALSE, OptionHandler::OPT_ARG));
+    op->addTag(TAG_ADVANCED);
+    op->setChangeGlobalOption(true);
+    handlers.push_back(op);
+  }
+  {
     OptionHandler* op(
         new BooleanOptionHandler(PREF_PARAMETERIZED_URI, TEXT_PARAMETERIZED_URI,
                                  A2_V_FALSE, OptionHandler::OPT_ARG, 'P'));
@@ -668,6 +696,13 @@ std::vector<OptionHandler*> OptionHandlerFactory::createOptionHandlers()
     OptionHandler* op(new UnitNumberOptionHandler(PREF_SOCKET_RECV_BUFFER_SIZE,
                                                   TEXT_SOCKET_RECV_BUFFER_SIZE,
                                                   "0", 0, 16_m));
+    op->addTag(TAG_ADVANCED);
+    handlers.push_back(op);
+  }
+  {
+    OptionHandler* op(new BooleanOptionHandler(
+        PREF_STDERR, TEXT_STDERR, A2_V_FALSE, OptionHandler::OPT_ARG));
+
     op->addTag(TAG_ADVANCED);
     handlers.push_back(op);
   }
@@ -946,7 +981,7 @@ std::vector<OptionHandler*> OptionHandlerFactory::createOptionHandlers()
   {
     OptionHandler* op(new ParameterOptionHandler(
         PREF_STREAM_PIECE_SELECTOR, TEXT_STREAM_PIECE_SELECTOR, A2_V_DEFAULT,
-        {A2_V_DEFAULT, V_INORDER, A2_V_GEOM}));
+        {A2_V_DEFAULT, V_INORDER, A2_V_RANDOM, A2_V_GEOM}));
     op->addTag(TAG_FTP);
     op->addTag(TAG_HTTP);
     op->setInitialOption(true);
@@ -1784,8 +1819,8 @@ std::vector<OptionHandler*> OptionHandlerFactory::createOptionHandlers()
     handlers.push_back(op);
   }
   {
-    OptionHandler* op(new NumberOptionHandler(PREF_SEED_TIME, TEXT_SEED_TIME,
-                                              NO_DEFAULT_VALUE, 0));
+    OptionHandler* op(new FloatNumberOptionHandler(
+        PREF_SEED_TIME, TEXT_SEED_TIME, NO_DEFAULT_VALUE, 0));
     op->addTag(TAG_BITTORRENT);
     op->setInitialOption(true);
     op->setChangeGlobalOption(true);
