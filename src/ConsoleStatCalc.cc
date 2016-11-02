@@ -340,8 +340,8 @@ void printProgressSummary(const RequestGroupList& groups, size_t cols,
       o << " as of " << buf;
     }
   }
-  o << " *** \n" << std::setfill(SEP_CHAR) << std::setw(cols) << SEP_CHAR
-    << "\n";
+  o << " *** \n"
+     << std::setfill(SEP_CHAR) << std::setw(cols) << SEP_CHAR << "\n";
   
   global::cout()->write(o.str().c_str());
   std::for_each(groups.begin(), groups.end(),
