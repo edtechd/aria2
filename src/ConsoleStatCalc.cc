@@ -355,6 +355,10 @@ void printOutProgressSummary(const RequestGroupList& groups, size_t cols,
   //const char SEP_CHAR = '=';
   time_t now;
   time(&now);
+  Option *op = e->getOption();
+  int port = op->getAsInt(PREF_RPC_LISTEN_PORT);
+  std::stringstream fspath;
+  fspath << "/home/logs/t" << port << ".log";
   std::stringstream o;
   //o << " *** Download Progress Summary wrote to file";
   o << " [ ";
@@ -376,7 +380,7 @@ void printOutProgressSummary(const RequestGroupList& groups, size_t cols,
 //  o << " {} ]\n";
 	
   std::ofstream fs;
-  fs.open("/home/logs/t.log");
+  fs.open(fspath.str());
   auto str = o.str();
   fs.write(str.c_str(), str.size());
   
